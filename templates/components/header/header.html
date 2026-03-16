@@ -1,0 +1,207 @@
+<!-- header -->
+{% load static %}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bw-ink: #0b1f2a;
+  --bw-muted: #52616b;
+  --bw-accent: #1f8a70;
+  --bw-accent-2: #f28f3b;
+  --bw-surface: #ffffff;
+}
+
+.bw-topbar {
+  background: #0b1f2a;
+  color: #f4f4f6;
+  font-size: 13px;
+  padding: 6px 0;
+}
+
+.bw-topbar .bw-offer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bw-topbar a {
+  color: var(--bw-accent-2);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.bw-nav {
+  background: var(--bw-surface);
+  border-bottom: 1px solid #f0ece4;
+  box-shadow: 0 8px 24px rgba(18, 24, 40, 0.06);
+  font-family: 'Work Sans', sans-serif;
+}
+
+.bw-brand {
+  font-family: 'Merriweather', serif;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.4px;
+  color: var(--bw-ink);
+  text-decoration: none;
+}
+
+.bw-brand span {
+  color: var(--bw-accent);
+}
+
+.bw-nav .nav-link {
+  color: var(--bw-ink);
+  font-weight: 600;
+  margin: 0 8px;
+}
+
+.bw-nav .nav-link:hover {
+  color: var(--bw-accent);
+}
+
+.bw-search {
+  min-width: 280px;
+  max-width: 420px;
+}
+
+.bw-search input {
+  border-radius: 12px 0 0 12px;
+  border: 1px solid #e6e1d7;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.bw-search button {
+  border-radius: 0 12px 12px 0;
+  border: 1px solid var(--bw-accent);
+  background: var(--bw-accent);
+  color: #fff;
+  padding: 8px 14px;
+}
+
+.bw-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.bw-icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  color: var(--bw-ink);
+  font-weight: 600;
+}
+
+.bw-icon-btn i {
+  font-size: 18px;
+}
+
+.bw-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background: var(--bw-accent-2);
+  color: #1b1b1f;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+
+.bw-dropdown .dropdown-menu {
+  border-radius: 14px;
+  border: 1px solid #efe8da;
+  padding: 10px;
+}
+
+.bw-dropdown .dropdown-item {
+  font-weight: 600;
+  padding: 8px 12px;
+}
+
+@media (max-width: 991px) {
+  .bw-search {
+    width: 100%;
+    margin: 12px 0;
+  }
+
+  .bw-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+</style>
+
+<div class="bw-topbar">
+  <div class="container bw-offer">
+    <span>Free delivery inside Kathmandu on orders over Rs. 999</span>
+    <a href="{% url 'store' %}">Shop Now</a>
+  </div>
+</div>
+
+<nav class="navbar navbar-expand-lg bw-nav">
+  <div class="container">
+    <a class="bw-brand" href="{% url 'home' %}"><span>Book</span> Loop</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#bwNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="bwNavbar">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'store' %}">Store</a></li>
+        <li class="nav-item"><a class="nav-link" href="/about/">About</a></li>
+      </ul>
+
+      <form action="{% url 'search' %}" method="get" class="d-flex bw-search">
+        <input type="text" name="q" class="form-control" placeholder="Search books, authors, genres" aria-label="Search">
+        <button type="submit" class="btn"><i class="fa fa-search"></i></button>
+      </form>
+
+      <div class="bw-actions ms-lg-3">
+        {% if request.user.is_authenticated %}
+          <a class="bw-icon-btn" href="{% url 'cart' %}">
+            <i class="fa fa-shopping-bag"></i>
+            <span>Cart</span>
+            <span class="bw-badge">{{ cartItems }}</span>
+          </a>
+          <a class="bw-icon-btn" href="{% url 'order' %}">
+            <i class="fa fa-clipboard"></i>
+            <span>Orders</span>
+          </a>
+          <a class="bw-icon-btn" href="{% url 'wishlist' %}">
+            <i class="fa fa-heart"></i>
+            <span>Wishlist</span>
+          </a>
+          <div class="dropdown bw-dropdown">
+            <a class="bw-icon-btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fa fa-user-circle"></i>
+              <span>{{ request.user.first_name|default:'Profile' }}</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="fa fa-user"></i> Profile</a></li>
+              <li><a class="dropdown-item" href="{% url 'wishlist' %}"><i class="fa fa-heart"></i> Wishlist</a></li>
+              <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="fa fa-sign-out"></i> Logout</a></li>
+            </ul>
+          </div>
+        {% else %}
+          <a class="bw-icon-btn" href="{% url 'login' %}"><i class="fa fa-user"></i><span>Login</span></a>
+          <a class="bw-icon-btn" href="{% url 'reg' %}"><i class="fa fa-user-plus"></i><span>Register</span></a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- //header -->

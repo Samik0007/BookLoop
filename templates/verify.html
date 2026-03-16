@@ -1,0 +1,193 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP — Book Loop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Full-screen book background */
+        .bg-image {
+            position: fixed; inset: 0;
+            background: url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1400&q=80') center/cover no-repeat;
+            z-index: 0;
+        }
+        .bg-overlay {
+            position: fixed; inset: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(10, 10, 10, .8) 0%,
+                rgba(10, 10, 10, .6) 50%,
+                rgba(10, 10, 10, .75) 100%
+            );
+            z-index: 1;
+        }
+
+        .verify-card {
+            position: relative; z-index: 2;
+            background: rgba(255, 255, 255, .97);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 30px 80px rgba(0,0,0,.35);
+            overflow: hidden;
+            max-width: 440px;
+            width: 100%;
+            margin: 40px 20px;
+            animation: cardPop .5s ease;
+        }
+        @keyframes cardPop {
+            from { opacity: 0; transform: scale(.95) translateY(20px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #198754, #1a9d5c);
+            padding: 40px 30px 36px;
+            text-align: center;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-header::before {
+            content: '';
+            position: absolute;
+            width: 250px; height: 250px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.06);
+            top: -100px; right: -60px;
+        }
+        .icon-ring {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.15);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 18px;
+            font-size: 2.2rem;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        .card-header h2 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700; font-size: 1.5rem; margin-bottom: 6px;
+        }
+        .card-header p { opacity: .88; font-size: .92rem; }
+
+        .card-body { padding: 36px 30px 30px; text-align: center; }
+        .card-body .hint {
+            color: #777; font-size: .9rem;
+            margin-bottom: 28px; line-height: 1.6;
+        }
+
+        .otp-input {
+            width: 100%; padding: 16px;
+            border: 1.5px solid #e0dcd4; border-radius: 14px;
+            font-size: 1.6rem; text-align: center;
+            letter-spacing: 10px; font-weight: 800;
+            background: #faf7f2; outline: none;
+            transition: all .25s;
+            color: #1a1a1a;
+        }
+        .otp-input:focus {
+            border-color: #198754; background: #fff;
+            box-shadow: 0 0 0 4px rgba(25,135,84,.1);
+        }
+        .otp-input::placeholder { letter-spacing: 6px; font-weight: 400; color: #ccc; }
+
+        .error-text { color: #ef4444; font-size: .84rem; margin-top: 8px; }
+
+        .btn-verify {
+            width: 100%; padding: 14px; margin-top: 22px;
+            background: linear-gradient(135deg, #198754, #1a9d5c);
+            border: none; border-radius: 14px;
+            color: #fff; font-size: 1rem; font-weight: 700;
+            cursor: pointer; transition: all .25s;
+            box-shadow: 0 4px 16px rgba(25,135,84,.2);
+        }
+        .btn-verify:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(25,135,84,.35);
+        }
+
+        .btn-cancel {
+            display: block; width: 100%; padding: 12px; margin-top: 10px;
+            border: 1.5px solid #e0dcd4; border-radius: 14px;
+            background: transparent; color: #777;
+            font-size: .92rem; font-weight: 600;
+            text-decoration: none; text-align: center;
+            transition: all .2s;
+        }
+        .btn-cancel:hover {
+            border-color: #198754; color: #198754;
+            text-decoration: none;
+        }
+
+        .card-footer {
+            padding: 18px 30px;
+            background: #faf7f2; border-top: 1px solid #f1ede4;
+            text-align: center; font-size: .78rem; color: #bbb;
+        }
+
+        .alert-box {
+            padding: 12px 16px; border-radius: 12px;
+            margin-bottom: 16px; font-size: .86rem;
+            display: flex; align-items: center; gap: 10px;
+            text-align: left;
+        }
+        .alert-box.danger  { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-box.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .alert-box.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    </style>
+</head>
+<body>
+    <div class="bg-image"></div>
+    <div class="bg-overlay"></div>
+
+    <div class="verify-card">
+        <div class="card-header">
+            <div class="icon-ring">📩</div>
+            <h2>Check Your Email</h2>
+            <p>We've sent a one-time password</p>
+        </div>
+
+        <div class="card-body">
+            <p class="hint">Enter the <strong>5-digit OTP</strong> we sent to your email to complete your registration.</p>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert-box {% if 'success' in message.tags %}success{% elif 'warning' in message.tags %}warning{% else %}danger{% endif %}">
+                        <i class="fa-solid {% if 'warning' in message.tags %}fa-triangle-exclamation{% elif 'success' in message.tags %}fa-circle-check{% else %}fa-circle-info{% endif %}"></i> {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST" action="{% url 'verify' %}">
+                {% csrf_token %}
+                <input type="text" name="otp" class="otp-input" placeholder="• • • • •" maxlength="5" required autofocus autocomplete="one-time-code">
+                {% if form.otp.errors %}<div class="error-text">{{ form.otp.errors.0 }}</div>{% endif %}
+                <button type="submit" class="btn-verify"><i class="fa-solid fa-circle-check"></i>&nbsp; Verify OTP</button>
+            </form>
+            <a href="{% url 'home' %}" class="btn-cancel"><i class="fa-solid fa-house"></i>&nbsp; Back to Home</a>
+        </div>
+
+        <div class="card-footer">
+            Developed by <strong>Samik Bhandari</strong> · Book Loop &copy; 2026
+        </div>
+    </div>
+</body>
+</html>

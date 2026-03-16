@@ -1,0 +1,218 @@
+{% load static %}
+
+{% include 'components/base/base-top.html' %}
+{% include 'components/header/header.html' %}
+
+<style>
+:root {
+  --bw-ink: #0b1f2a;
+  --bw-muted: #52616b;
+  --bw-accent: #1f8a70;
+  --bw-accent-2: #f28f3b;
+}
+
+.profile-hero {
+  padding: 40px 0 20px;
+  background: radial-gradient(circle at 10% 10%, #f7f3eb 0%, #ffffff 40%, #eef6f3 100%);
+}
+
+.profile-card {
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow: 0 18px 40px rgba(11, 31, 42, 0.12);
+  padding: 24px;
+}
+
+.profile-avatar {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: #e6f3ef;
+  color: var(--bw-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.profile-title {
+  font-family: 'Merriweather', serif;
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+
+.profile-meta {
+  color: var(--bw-muted);
+  font-size: 14px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.stat-card {
+  background: #f7f3eb;
+  border-radius: 16px;
+  padding: 14px;
+  text-align: center;
+}
+
+.stat-card h4 {
+  margin: 0;
+  color: var(--bw-accent);
+}
+
+.stat-card span {
+  font-size: 13px;
+  color: var(--bw-muted);
+}
+
+.profile-section {
+  margin-top: 24px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.info-item {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #efe8da;
+  padding: 14px;
+}
+
+.info-item label {
+  font-size: 12px;
+  color: var(--bw-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-item div {
+  font-weight: 600;
+}
+
+.profile-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 600;
+  color: #fff;
+  background: var(--bw-accent);
+}
+
+.recent-orders {
+  margin-top: 20px;
+}
+
+.recent-orders table {
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+}
+</style>
+
+<section class="profile-hero">
+  <div class="container">
+    <div class="profile-card">
+      <div class="row g-4">
+        <div class="col-lg-4 text-center text-lg-start">
+          <div class="profile-avatar">
+            <i class="fa fa-user"></i>
+          </div>
+          <div class="profile-title">{{ request.user.get_full_name|default:request.user.username }}</div>
+          <div class="profile-meta">{{ request.user.email }}</div>
+          <div class="profile-meta">@{{ request.user.username }}</div>
+          <div class="profile-actions" style="margin-top: 16px;">
+            <a href="{% url 'changepassword' %}"><i class="fa fa-lock"></i> Change Password</a>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h4>{{ orders|length }}</h4>
+              <span>Total Orders</span>
+            </div>
+            <div class="stat-card">
+              <h4>{{ wishlist_count }}</h4>
+              <span>Wishlist Items</span>
+            </div>
+            <div class="stat-card">
+              <h4>Rs {{ total_spent }}</h4>
+              <span>Total Spent</span>
+            </div>
+            <div class="stat-card">
+              <h4>{{ cartItems }}</h4>
+              <span>Cart Items</span>
+            </div>
+          </div>
+
+          <div class="profile-section">
+            <div class="info-grid">
+              <div class="info-item">
+                <label>First Name</label>
+                <div>{{ request.user.first_name|default:"--" }}</div>
+              </div>
+              <div class="info-item">
+                <label>Last Name</label>
+                <div>{{ request.user.last_name|default:"--" }}</div>
+              </div>
+              <div class="info-item">
+                <label>Username</label>
+                <div>{{ request.user.username }}</div>
+              </div>
+              <div class="info-item">
+                <label>Email</label>
+                <div>{{ request.user.email|default:"--" }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="recent-orders">
+            <h5 class="mt-4" style="font-family: 'Merriweather', serif;">Recent Orders</h5>
+            {% if recent_orders %}
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for order in recent_orders %}
+                  <tr>
+                    <td>{{ order.id }}</td>
+                    <td>{{ order.date_ordered }}</td>
+                    <td>{{ order.order_status }}</td>
+                    <td>Rs {{ order.get_cart_total }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+              <p class="text-muted">No orders yet. Start browsing the store.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% include 'components/footer/footer.html' %}
+
+{% include 'components/base/base-bottom.html' %}

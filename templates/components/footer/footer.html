@@ -1,0 +1,128 @@
+{% load static %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<style>
+:root {
+  --bw-ink: #0b1f2a;
+  --bw-muted: #52616b;
+  --bw-accent: #1f8a70;
+  --bw-accent-2: #f28f3b;
+}
+
+.bw-footer {
+  background: #0b1f2a;
+  color: #f2f2f2;
+  padding: 50px 0 24px;
+  font-family: 'Work Sans', sans-serif;
+}
+
+.bw-footer h4 {
+  font-family: 'Merriweather', serif;
+  font-size: 18px;
+  margin-bottom: 14px;
+}
+
+.bw-footer a {
+  color: #dcdcdc;
+  text-decoration: none;
+}
+
+.bw-footer a:hover {
+  color: var(--bw-accent-2);
+}
+
+.bw-footer-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.bw-footer-list li {
+  margin-bottom: 8px;
+}
+
+.bw-footer-newsletter input {
+  background: #1c1d24;
+  border: 1px solid #2b2d36;
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 10px 0 0 10px;
+  width: 100%;
+}
+
+.bw-footer-newsletter button {
+  background: var(--bw-accent);
+  border: none;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 0 10px 10px 0;
+}
+
+.bw-footer-social {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.bw-footer-social a {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #1c1d24;
+  color: #fff;
+}
+
+.bw-footer-bottom {
+  border-top: 1px solid #1e1f27;
+  margin-top: 32px;
+  padding-top: 18px;
+  font-size: 13px;
+  color: #b8b8b8;
+}
+</style>
+
+<footer class="bw-footer">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <h4>Book Loop</h4>
+        <p>Discover books, build wishlists, and shop with smart recommendations built just for you.</p>
+      </div>
+      <div class="col-md-2">
+        <h4>Explore</h4>
+        <ul class="bw-footer-list">
+          <li><a href="/about/">About Us</a></li>
+          <li><a href="/store/">Best Deals</a></li>
+          <li><a href="/">New Arrivals</a></li>
+        </ul>
+      </div>
+      <div class="col-md-3">
+        <h4>Contact</h4>
+        <ul class="bw-footer-list">
+          <li><i class="fa fa-phone"></i> (+977) 9860464257</li>
+          <li><i class="fa fa-map-marker"></i> Gokarna, KTM</li>
+          <li><i class="fa fa-envelope"></i> Bookloop@gmail.com</li>
+        </ul>
+      </div>
+      <div class="col-md-3">
+        <h4>Stay in Touch</h4>
+        <div class="input-group bw-footer-newsletter">
+          <input type="email" class="form-control" placeholder="Email address">
+          <button class="btn" type="button">Join</button>
+        </div>
+        <div class="bw-footer-social">
+          <a href="https://www.facebook.com/pukar.bhandari17"><i class="fa fa-facebook"></i></a>
+          <a href="https://twitter.com/OverTheMooN007"><i class="fa fa-twitter"></i></a>
+          <a href="https://www.instagram.com/its.pukar/"><i class="fa fa-instagram"></i></a>
+        </div>
+      </div>
+    </div>
+    <div class="bw-footer-bottom">
+      © 2026 Book Loop. All rights reserved. Design by Samik Bhandari.
+    </div>
+  </div>
+</footer>

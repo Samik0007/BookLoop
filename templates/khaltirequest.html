@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Khalti Payment Gateway Integration</title>
+    <script src="https://unpkg.com/khalti-checkout-web@latest/dist/khalti-checkout.iffe.js"></script>
+</head>
+<body>
+    {% with total=product.price %}
+    <br>
+    <h3>Your order amount is Rs. {{ total }}</h3>
+
+    <button id="payment-button">Pay with Khalti</button>
+    <br>
+    <br>
+    <a href="/">Go to Home page</a>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        
+            <title>Khalti Payment Gateway Integration</title>
+            <script src="https://khalti.s3.ap-south-1.amazonaws.com/KPG/dist/2020.12.17.0.0.0/khalti-checkout.iffe.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+            <script>
+                var config = {
+                    // replace the publicKey with yours
+                    "publicKey": "test_public_key_314531128d0247a8a70d4b1da91a4634",
+              "productIdentity": "1234567890",
+              "productName": "Dragon",
+              "productUrl": "http://gameofthrones.wikia.com/wiki/Dragons",
+              "paymentPreference": [
+                  "KHALTI",
+                  
+                  ],
+              "eventHandler": {
+                        onSuccess (payload) {
+                            // hit merchant api for initiating verification
+                            axios.post("/khalti/", {
+                                "product_identity": "product_id",
+                                "token": payload.token,
+                                "amount": payload.amount,
+                            }).then(function(resp){
+                                console.log(resp, 'resp from khalti')
+                                if (resp.data.status === 'false'){
+                                    alert("Sorry. Error occurred: " + resp.data.message)
+                                    location.href = "{{request.build_absolute_uri}}"
+                                }else{
+                                    axios.get("/khalti-verify/", {
+                                        params: {
+                                            "token": payload.token,
+                                            "amount": payload.amount,
+                                            "order_id": "product_id"
+                                        }
+                                    }).then(function(resp){
+                                        if (resp.data.success == true){
+                                            alert("Thanks. Payment Completed Successfully")
+                                            location.href = "/"
+                                        }else{
+                                            alert("Sorry. Error occurred")
+                                            location.href = "{{request.build_absolute_uri}}"
+                                        }
+                                    })
+                                }
+                            })
+                        },
+                        onError (error) {
+                            console.log(error,'this the error');
+                        },
+                        onClose () {
+                            console.log('widget is closing');
+                        }
+                    }
+                };
+        
+                var checkout = new KhaltiCheckout(config);
+                var btn = document.getElementById("payment-button");
+                btn.onclick = function () {
+                    // minimum transaction amount must be 10, i.e 1000 in paisa.
+                    checkout.show({amount: 1000});
+                }
+            </script>
+    {% endwith %}
+</body>
+</html>

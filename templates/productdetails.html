@@ -1,0 +1,725 @@
+{% load static %}
+
+{% include 'components/base/base-top.html' %}
+
+<!-- bootstrap css -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+
+<!-- icon css -->
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.3/css/all.css"
+    integrity="sha384-SZXxX4whJ79/gErwcOYf+zWLeJdY/qpuqC4cAa9rOGUstPomtqpuNWT9wdPEn2fk" crossorigin="anonymous">
+
+{% include 'components/header/header.html' %}
+
+<style>
+:root {
+  --bw-ink: #0f172a;
+  --bw-muted: #64748b;
+  --bw-accent: #0f766e;
+  --bw-accent-2: #f97316;
+  --bw-line: rgba(148, 163, 184, 0.22);
+  --bw-surface: rgba(255, 255, 255, 0.94);
+  --bw-shadow: 0 22px 50px rgba(15, 23, 42, 0.10);
+  --bw-shadow-hover: 0 28px 60px rgba(15, 23, 42, 0.16);
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(249, 115, 22, 0.10), transparent 30%),
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 34%),
+    linear-gradient(180deg, #f8fafc 0%, #fffdf8 50%, #f8fafc 100%);
+}
+
+.product-hero {
+  padding: 46px 0 28px;
+}
+
+.product-shell {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 247, 237, 0.82));
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 32px;
+  padding: 30px;
+  box-shadow: var(--bw-shadow);
+  backdrop-filter: blur(10px);
+}
+
+.product-card {
+  background: transparent;
+  border-radius: 28px;
+}
+
+.product-image-wrap {
+  position: relative;
+  padding: 18px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.14), rgba(249, 115, 22, 0.12));
+}
+
+.product-floating-badge {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--bw-accent);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.10);
+}
+
+.product-image {
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.18);
+}
+
+.product-image img {
+  width: 100%;
+  height: 460px;
+  object-fit: cover;
+}
+
+.product-content {
+  padding: 6px 4px;
+}
+
+.product-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 118, 110, 0.10);
+  color: var(--bw-accent);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.product-title {
+  font-family: 'Merriweather', serif;
+  font-size: 34px;
+  line-height: 1.2;
+  color: var(--bw-ink);
+  margin-bottom: 14px;
+}
+
+.product-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.product-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.product-description {
+  color: var(--bw-muted);
+  line-height: 1.8;
+  font-size: 15px;
+  margin-bottom: 20px;
+}
+
+.product-highlight-bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.product-highlight {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--bw-line);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.05);
+}
+
+.product-highlight small {
+  display: block;
+  color: var(--bw-muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.product-highlight strong {
+  color: var(--bw-ink);
+  font-size: 16px;
+}
+
+.product-price-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--bw-line);
+  border-radius: 22px;
+  padding: 18px 20px;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.05);
+  margin-bottom: 18px;
+}
+
+.product-price-label {
+  color: var(--bw-muted);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.product-price {
+  font-size: 32px;
+  color: var(--bw-accent);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.product-stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.stock-available {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.stock-empty {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+#cart-msg {
+  display: none;
+  padding: 14px 16px;
+  border-radius: 16px;
+  margin-bottom: 14px;
+  font-size: 14px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+}
+
+.product-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.product-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 54px;
+  border-radius: 16px;
+  font-weight: 700;
+  border: none;
+  transition: all 0.22s ease;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+}
+
+.btn-cart {
+  background: linear-gradient(135deg, var(--bw-accent), #14b8a6);
+  color: #fff;
+}
+
+.btn-buy {
+  background: linear-gradient(135deg, var(--bw-accent-2), #fb923c);
+  color: #fff;
+}
+
+.btn-wish {
+  background: #fff;
+  color: var(--bw-ink);
+  border: 1px solid rgba(148, 163, 184, 0.24) !important;
+}
+
+.btn-cart:hover,
+.btn-buy:hover,
+.btn-wish:hover {
+  transform: translateY(-2px);
+}
+
+.btn-wish:hover {
+  color: #e11d48;
+  border-color: rgba(225, 29, 72, 0.24) !important;
+  background: rgba(225, 29, 72, 0.05);
+}
+
+.product-side {
+  background: linear-gradient(180deg, rgba(15, 118, 110, 0.08), rgba(255, 255, 255, 0.92));
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 24px;
+  padding: 24px;
+  height: 100%;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.06);
+}
+
+.product-side h5 {
+  font-family: 'Merriweather', serif;
+  color: var(--bw-ink);
+  margin-bottom: 16px;
+}
+
+.side-feature {
+  display: flex;
+  gap: 12px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.side-feature:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.side-feature i {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--bw-accent);
+  font-size: 14px;
+}
+
+.side-feature strong {
+  display: block;
+  color: var(--bw-ink);
+  margin-bottom: 3px;
+  font-size: 14px;
+}
+
+.side-feature span {
+  color: var(--bw-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.similar-section {
+  padding: 12px 0 60px;
+}
+
+.similar-header h3 {
+  font-family: 'Merriweather', serif;
+  color: var(--bw-ink);
+  margin-bottom: 8px;
+}
+
+.similar-header p {
+  color: var(--bw-muted);
+  margin: 0;
+}
+
+.similar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 20px;
+  margin-top: 18px;
+}
+
+.similar-card {
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.similar-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--bw-shadow-hover);
+}
+
+.similar-card img {
+  width: 100%;
+  height: 230px;
+  object-fit: cover;
+}
+
+.similar-body {
+  padding: 14px 16px 16px;
+}
+
+.similar-body h6 {
+  font-size: 15px;
+  margin-bottom: 6px;
+  color: var(--bw-ink);
+}
+
+.similar-meta {
+  font-size: 12px;
+  color: var(--bw-muted);
+  margin-bottom: 10px;
+}
+
+.similar-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.similar-price {
+  color: var(--bw-accent);
+  font-weight: 800;
+  font-size: 17px;
+}
+
+.similar-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--bw-accent), #14b8a6);
+  padding: 8px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+}
+
+@media (max-width: 991px) {
+  .product-image img {
+    height: 360px;
+  }
+
+  .product-highlight-bar,
+  .product-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .product-shell {
+    padding: 22px;
+    border-radius: 24px;
+  }
+
+  .product-title {
+    font-size: 28px;
+  }
+}
+</style>
+
+{% if data %}
+<section class="product-hero">
+  <div class="container">
+    <div class="product-shell">
+      <div class="product-card">
+        <div class="row g-4 align-items-start">
+          <div class="col-lg-5">
+            <div class="product-image-wrap">
+              <div class="product-floating-badge">
+                <i class="fas fa-book-open"></i>
+                Handpicked title
+              </div>
+              <div class="product-image">
+                {% if data.imageURL and "herald" not in data.imageURL|lower and "college" not in data.imageURL|lower %}
+                <img src="{{ data.imageURL }}" alt="{{ data.Book_name }}">
+                {% else %}
+                <img src="{% static 'images/default-book.jpg' %}" alt="{{ data.Book_name }}">
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-4">
+            <div class="product-content">
+              <div class="product-eyebrow">
+                <i class="fas fa-magic"></i>
+                Modern book details
+              </div>
+
+              <div class="product-title">{{ data.Book_name }}</div>
+
+              <div class="product-meta-row">
+                <span class="product-meta-chip"><i class="fas fa-user-edit"></i> {{ data.Author }}</span>
+                <span class="product-meta-chip"><i class="fas fa-layer-group"></i> {{ data.genre }}</span>
+              </div>
+
+              <p class="product-description">{{ data.description }}</p>
+
+              <div class="product-highlight-bar">
+                <div class="product-highlight">
+                  <small>Delivery</small>
+                  <strong>2-4 business days</strong>
+                </div>
+                <div class="product-highlight">
+                  <small>Checkout</small>
+                  <strong>Fast & secure</strong>
+                </div>
+                <div class="product-highlight">
+                  <small>Recommendation</small>
+                  <strong>AI-powered picks</strong>
+                </div>
+              </div>
+
+              <div class="product-price-panel">
+                <div>
+                  <div class="product-price-label">Special price</div>
+                  <div class="product-price">Rs. {{ data.price }}</div>
+                </div>
+                {% if data.quantity == 0 %}
+                  <span class="product-stock stock-empty">
+                    <i class="fas fa-times-circle"></i>
+                    Out of stock
+                  </span>
+                {% else %}
+                  <span class="product-stock stock-available">
+                    <i class="fas fa-check-circle"></i>
+                    {{ data.quantity }} in stock
+                  </span>
+                {% endif %}
+              </div>
+
+              <div id="cart-msg"></div>
+
+              <div class="product-actions">
+                <button data-product="{{ data.id }}" data-action="add" class="btn btn-cart update-cart">
+                  <i class="fas fa-cart-plus"></i>
+                  Add to Cart
+                </button>
+                <button class="btn btn-buy" onclick="buyNow(event, {{ data.id }})">
+                  <i class="fas fa-bolt"></i>
+                  Buy Now
+                </button>
+                <button class="btn btn-wish addToWishlist" data-product="{{ data.id }}">
+                  <i class="fas fa-heart"></i>
+                  Save to Wishlist
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-3">
+            <div class="product-side">
+              <h5>Why you'll love it</h5>
+
+              <div class="side-feature">
+                <i class="fas fa-undo-alt"></i>
+                <div>
+                  <strong>Easy returns</strong>
+                  <span>Return or replace within 7 days for a smoother shopping experience.</span>
+                </div>
+              </div>
+
+              <div class="side-feature">
+                <i class="fas fa-shield-alt"></i>
+                <div>
+                  <strong>Protected purchase</strong>
+                  <span>Secure checkout flow built for safe payments and trusted ordering.</span>
+                </div>
+              </div>
+
+              <div class="side-feature">
+                <i class="fas fa-magic"></i>
+                <div>
+                  <strong>Smart recommendations</strong>
+                  <span>Discover similar titles based on genre, author, and reading behavior.</span>
+                </div>
+              </div>
+
+              <div class="side-feature">
+                <i class="fas fa-gift"></i>
+                <div>
+                  <strong>Perfect for gifting</strong>
+                  <span>A stylish choice for readers, collectors, and thoughtful presents.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <section class="similar-section">
+        <div class="similar-header">
+          <h3>You May Also Like</h3>
+          <p>Similar books selected from your current interest in author and genre.</p>
+        </div>
+
+        <div class="similar-grid">
+          {% for book in similar_books %}
+          <div class="similar-card">
+            {% if book.image and "herald" not in book.image.url|lower and "college" not in book.image.url|lower %}
+              <img src="{{ book.image.url }}" alt="{{ book.Book_name }}">
+            {% else %}
+              <img src="{% static 'images/default-book.jpg' %}" alt="{{ book.Book_name }}">
+            {% endif %}
+            <div class="similar-body">
+              <h6>{{ book.Book_name|truncatewords:4 }}</h6>
+              <div class="similar-meta">{{ book.Author|truncatewords:2 }}</div>
+              <div class="similar-price-row">
+                <div class="similar-price">Rs. {{ book.price }}</div>
+                <div class="similar-actions">
+                  <a href="{% url 'product' book.id %}">
+                    View
+                    <i class="fas fa-arrow-right"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <p style="color: var(--bw-muted); margin-top: 14px;">No similar books found.</p>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+{% else %}
+<section class="product-hero">
+  <div class="container">
+    <div class="product-shell">
+      <h2 class="product-title">Book not available</h2>
+      <p class="product-description">This book may have been removed or is unavailable right now.</p>
+      <a href="{% url 'store' %}" class="btn btn-cart">Back to Store</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<script>
+  var updateBtns = document.getElementsByClassName('update-cart')
+
+  for (var i = 0; i < updateBtns.length; i++) {
+    updateBtns[i].addEventListener('click', function () {
+      var productId = this.dataset.product
+      var action = this.dataset.action
+      console.log('productId:', productId, 'Action:', action)
+
+      if (user == 'AnonymousUser') {
+        alert('Please login first to add items to cart!')
+        window.location.href = '/login/'
+      } else {
+        addToCart(productId, action)
+      }
+    })
+  }
+
+  function addToCart(productId, action) {
+    var url = '/update_item/'
+    var msgBox = document.getElementById('cart-msg')
+
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken,
+      },
+      body: JSON.stringify({ 'productId': productId, 'action': action })
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('data:', data)
+        if (msgBox) {
+          msgBox.style.display = 'block'
+          msgBox.style.background = '#dcfce7'
+          msgBox.style.color = '#166534'
+          msgBox.style.border = '1px solid #86efac'
+          msgBox.innerHTML = '<i class="fas fa-check-circle"></i> Item added to cart successfully!'
+          setTimeout(function () { location.reload() }, 900)
+        } else {
+          location.reload()
+        }
+      })
+  }
+
+  function buyNow(event, productId) {
+    event.preventDefault()
+
+    if (user == 'AnonymousUser') {
+      alert('Please login first to buy items!')
+      window.location.href = '/login/'
+      return
+    }
+
+    var msgBox = document.getElementById('cart-msg')
+    if (msgBox) {
+      msgBox.style.display = 'block'
+      msgBox.style.background = '#e0f2fe'
+      msgBox.style.color = '#0c4a6e'
+      msgBox.style.border = '1px solid #7dd3fc'
+      msgBox.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing express checkout...'
+    }
+
+    var url = '/update_item/'
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken,
+      },
+      body: JSON.stringify({ 'productId': productId, 'action': 'add' })
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Added to cart:', data)
+        window.location.href = '/checkout/'
+      })
+  }
+
+  var wishBtns = document.getElementsByClassName('addToWishlist')
+  for (var j = 0; j < wishBtns.length; j++) {
+    wishBtns[j].addEventListener('click', function () {
+      var productId = this.dataset.product
+      if (user == 'AnonymousUser') {
+        alert('Please login first to add items to wishlist!')
+        window.location.href = '/login/'
+        return
+      }
+
+      fetch('/add-to-wishlist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrftoken
+        },
+        body: 'product_id=' + productId
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          var msgBox = document.getElementById('cart-msg')
+          if (msgBox) {
+            msgBox.style.display = 'block'
+            msgBox.style.background = '#fff7ed'
+            msgBox.style.color = '#9a3412'
+            msgBox.style.border = '1px solid #fdba74'
+            msgBox.innerHTML = '<i class="fas fa-heart"></i> Added to wishlist'
+          }
+        })
+    })
+  }
+</script>
+
+{% include 'components/footer/footer.html' %}
+
+{% include 'components/base/base-bottom.html' %}

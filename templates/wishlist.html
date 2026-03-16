@@ -1,0 +1,431 @@
+{% load static %}
+
+{% include 'components/base/base-top.html' %}
+{% include 'components/header/header.html' %}
+
+<style>
+:root {
+  --bw-ink: #0f172a;
+  --bw-muted: #64748b;
+  --bw-accent: #0f766e;
+  --bw-accent-2: #f97316;
+  --bw-line: rgba(148, 163, 184, 0.22);
+  --bw-surface: rgba(255, 255, 255, 0.94);
+  --bw-shadow: 0 20px 45px rgba(15, 23, 42, 0.10);
+  --bw-shadow-hover: 0 26px 55px rgba(15, 23, 42, 0.16);
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(249, 115, 22, 0.10), transparent 30%),
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 34%),
+    linear-gradient(180deg, #f8fafc 0%, #fffdf8 50%, #f8fafc 100%);
+}
+
+.wishlist-hero {
+  padding: 42px 0 60px;
+}
+
+.wishlist-shell {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 247, 237, 0.80));
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 30px;
+  padding: 30px;
+  box-shadow: var(--bw-shadow);
+  backdrop-filter: blur(10px);
+}
+
+.wishlist-topbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.wishlist-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(225, 29, 72, 0.08);
+  color: #e11d48;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.wishlist-title {
+  font-family: 'Merriweather', serif;
+  font-size: 32px;
+  line-height: 1.2;
+  color: var(--bw-ink);
+  margin-bottom: 8px;
+}
+
+.wishlist-subtitle {
+  color: var(--bw-muted);
+  margin: 0;
+  max-width: 580px;
+}
+
+.wishlist-summary {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.wishlist-pill {
+  min-width: 120px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--bw-line);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+}
+
+.wishlist-pill strong {
+  display: block;
+  font-size: 18px;
+  color: var(--bw-ink);
+}
+
+.wishlist-pill span {
+  font-size: 12px;
+  color: var(--bw-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.wishlist-top-actions .btn-continue {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid var(--bw-line);
+  color: var(--bw-ink);
+  padding: 12px 16px;
+  font-weight: 700;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.06);
+}
+
+.wishlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(265px, 1fr));
+  gap: 24px;
+}
+
+.wishlist-card {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--bw-surface);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: var(--bw-shadow);
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.wishlist-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--bw-shadow-hover);
+}
+
+.wishlist-card-media {
+  position: relative;
+  padding: 18px 18px 0;
+}
+
+.wishlist-card-media::before {
+  content: "";
+  position: absolute;
+  inset: 18px 18px auto;
+  height: 72%;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.12), rgba(249, 115, 22, 0.14));
+}
+
+.wishlist-card img {
+  position: relative;
+  width: 100%;
+  height: 290px;
+  object-fit: cover;
+  border-radius: 18px;
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.14);
+}
+
+.wishlist-badge {
+  position: absolute;
+  left: 32px;
+  top: 32px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #e11d48;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+}
+
+.wishlist-body {
+  padding: 18px 20px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.wishlist-body h5 {
+  font-size: 19px;
+  line-height: 1.45;
+  margin-bottom: 10px;
+  color: var(--bw-ink);
+}
+
+.wishlist-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.wishlist-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+  padding: 7px 10px;
+}
+
+.wishlist-price-row {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.wishlist-price {
+  color: var(--bw-accent);
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.wishlist-price small {
+  display: block;
+  color: var(--bw-muted);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.wishlist-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #f59e0b;
+  background: #fffaf0;
+  border-radius: 999px;
+  padding: 8px 10px;
+}
+
+.wishlist-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.wishlist-actions .btn-view,
+.wishlist-actions .btn-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  border-radius: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.wishlist-actions .btn-view {
+  background: linear-gradient(135deg, var(--bw-accent), #14b8a6);
+  color: #fff;
+  border: none;
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.22);
+}
+
+.wishlist-actions .btn-view:hover {
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.wishlist-actions .btn-remove {
+  min-width: 122px;
+  background: rgba(225, 29, 72, 0.08);
+  color: #be123c;
+  border: 1px solid rgba(225, 29, 72, 0.14);
+}
+
+.wishlist-actions .btn-remove:hover {
+  transform: translateY(-2px);
+  background: rgba(225, 29, 72, 0.12);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 54px 24px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px dashed rgba(148, 163, 184, 0.34);
+}
+
+.empty-state i {
+  font-size: 44px;
+  color: #e11d48;
+  margin-bottom: 14px;
+}
+
+.empty-state h4 {
+  color: var(--bw-ink);
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  color: var(--bw-muted);
+  margin-bottom: 18px;
+}
+
+.empty-state .btn-browse {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--bw-accent), #14b8a6);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.22);
+}
+
+@media (max-width: 767px) {
+  .wishlist-shell {
+    padding: 22px;
+    border-radius: 24px;
+  }
+
+  .wishlist-title {
+    font-size: 28px;
+  }
+
+  .wishlist-actions {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<section class="wishlist-hero">
+  <div class="container">
+    <div class="wishlist-shell">
+      <div class="wishlist-topbar">
+        <div>
+          <div class="wishlist-eyebrow"><i class="fas fa-heart"></i> Saved favorites</div>
+          <div class="wishlist-title">Your Personal Wishlist</div>
+          <p class="wishlist-subtitle">Keep the books you love in one polished space and jump back into shopping whenever you're ready.</p>
+        </div>
+
+        <div class="wishlist-summary">
+          <div class="wishlist-pill">
+            <strong>{{ wishlist|length }}</strong>
+            <span>Saved Books</span>
+          </div>
+          <div class="wishlist-top-actions">
+            <a class="btn-continue" href="{% url 'store' %}">
+              Continue Shopping
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="wishlist-grid">
+        {% for item in wishlist %}
+        <div class="wishlist-card">
+          <div class="wishlist-card-media">
+            <div class="wishlist-badge"><i class="fas fa-heart"></i> Wishlisted</div>
+        <a href="{% url 'product' item.product.id %}">
+          {% if item.product.imageURL and "herald" not in item.product.imageURL|lower and "college" not in item.product.imageURL|lower %}
+          <img src="{{ item.product.imageURL }}" alt="{{ item.product.Book_name }}">
+          {% else %}
+          <img src="{% static 'images/default-book.jpg' %}" alt="{{ item.product.Book_name }}">
+          {% endif %}
+        </a>
+          </div>
+          <div class="wishlist-body">
+            <h5>{{ item.product.Book_name }}</h5>
+            <div class="wishlist-meta-row">
+              <span class="wishlist-chip"><i class="fas fa-layer-group"></i> {{ item.product.genre }}</span>
+              <span class="wishlist-chip"><i class="fas fa-user-edit"></i> {{ item.product.Author }}</span>
+            </div>
+            <div class="wishlist-price-row">
+              <div class="wishlist-price">
+                <small>Current price</small>
+                Rs. {{ item.product.price|floatformat:2 }}
+              </div>
+              <div class="wishlist-status">
+                <i class="fas fa-star"></i>
+                <span>Favorite</span>
+              </div>
+            </div>
+            <div class="wishlist-actions">
+              <a href="{% url 'product' item.product.id %}" class="btn-view">
+                View Book
+                <i class="fas fa-arrow-right"></i>
+              </a>
+              <form action="{% url 'remove_wishlist' item.product.id %}" method="POST" class="d-inline">
+                {% csrf_token %}
+                <button class="btn-remove" type="submit">
+                  <i class="fa fa-trash"></i>
+                  Remove
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+          <i class="fas fa-heart-broken"></i>
+          <h4>Your wishlist is empty</h4>
+          <p>Browse the store and save the books you want to revisit later.</p>
+          <a href="{% url 'store' %}" class="btn-browse">
+            Browse Store
+            <i class="fas fa-book-open"></i>
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% include 'components/footer/footer.html' %}
+{% include 'components/base/base-bottom.html' %}

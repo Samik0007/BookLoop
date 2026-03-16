@@ -1,0 +1,492 @@
+{% load static %}
+
+{% include 'components/base/base-top.html' %}
+
+<!-- bootstrap css -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+
+<!-- icon css -->
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.3/css/all.css"
+    integrity="sha384-SZXxX4whJ79/gErwcOYf+zWLeJdY/qpuqC4cAa9rOGUstPomtqpuNWT9wdPEn2fk" crossorigin="anonymous">
+
+<!-- alertify -->
+<script src="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css"/>
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/themes/bootstrap.min.css"/>
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/themes/semantic.rtl.min.css"/>
+
+{% include 'components/header/header.html' %}
+
+<style>
+:root {
+  --bw-ink: #0f172a;
+  --bw-muted: #64748b;
+  --bw-accent: #0f766e;
+  --bw-accent-2: #f97316;
+  --bw-accent-soft: rgba(15, 118, 110, 0.12);
+  --bw-warm: #fff7ed;
+  --bw-line: rgba(148, 163, 184, 0.22);
+  --bw-surface: rgba(255, 255, 255, 0.94);
+  --bw-shadow: 0 20px 45px rgba(15, 23, 42, 0.10);
+  --bw-shadow-hover: 0 26px 55px rgba(15, 23, 42, 0.16);
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(249, 115, 22, 0.10), transparent 28%),
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 34%),
+    linear-gradient(180deg, #f8fafc 0%, #fffdf8 50%, #f8fafc 100%);
+}
+
+.store-hero {
+  padding: 42px 0 60px;
+}
+
+.store-shell {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 247, 237, 0.78));
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 30px;
+  padding: 30px;
+  box-shadow: var(--bw-shadow);
+  backdrop-filter: blur(10px);
+}
+
+.store-topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: end;
+  margin-bottom: 26px;
+  flex-wrap: wrap;
+}
+
+.store-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.10);
+  color: var(--bw-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.store-title {
+  font-family: 'Merriweather', serif;
+  font-size: 34px;
+  line-height: 1.2;
+  color: var(--bw-ink);
+  margin-bottom: 8px;
+}
+
+.store-subtitle {
+  color: var(--bw-muted);
+  font-size: 15px;
+  max-width: 620px;
+  margin: 0;
+}
+
+.store-summary {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.store-pill {
+  min-width: 120px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--bw-line);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+}
+
+.store-pill strong {
+  display: block;
+  font-size: 18px;
+  color: var(--bw-ink);
+}
+
+.store-pill span {
+  font-size: 12px;
+  color: var(--bw-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.store-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.store-card {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--bw-surface);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: var(--bw-shadow);
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.store-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--bw-shadow-hover);
+}
+
+.store-card-media {
+  position: relative;
+  padding: 18px 18px 0;
+}
+
+.store-card-media::before {
+  content: "";
+  position: absolute;
+  inset: 18px 18px auto;
+  height: 72%;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.16), rgba(249, 115, 22, 0.14));
+}
+
+.store-card img {
+  position: relative;
+  width: 100%;
+  height: 290px;
+  object-fit: cover;
+  border-radius: 18px;
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.14);
+}
+
+.store-badge {
+  position: absolute;
+  left: 32px;
+  top: 32px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--bw-accent);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+}
+
+.store-body {
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.store-body h5 {
+  font-size: 19px;
+  line-height: 1.45;
+  margin-bottom: 10px;
+  color: var(--bw-ink);
+}
+
+.store-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.store-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+  padding: 7px 10px;
+}
+
+.store-price-row {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.store-price {
+  color: var(--bw-accent);
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.store-price small {
+  display: block;
+  color: var(--bw-muted);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.store-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #f59e0b;
+  background: #fffaf0;
+  border-radius: 999px;
+  padding: 8px 10px;
+}
+
+.store-actions {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.store-actions .btn-details,
+.store-actions .icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  border-radius: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.store-actions .btn-details {
+  background: linear-gradient(135deg, var(--bw-accent), #14b8a6);
+  color: #fff;
+  border: none;
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.22);
+}
+
+.store-actions .btn-details:hover {
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.store-actions .icon-btn {
+  width: 48px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: #fff;
+  color: var(--bw-ink);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.06);
+}
+
+.store-actions .icon-btn:hover {
+  transform: translateY(-2px);
+}
+
+.store-actions .cart-btn:hover {
+  color: var(--bw-accent);
+  border-color: rgba(15, 118, 110, 0.35);
+  background: var(--bw-accent-soft);
+}
+
+.store-actions .wish-btn:hover {
+  color: #e11d48;
+  border-color: rgba(225, 29, 72, 0.25);
+  background: rgba(225, 29, 72, 0.08);
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px 24px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+}
+
+.empty-state i {
+  font-size: 42px;
+  color: var(--bw-accent);
+  margin-bottom: 14px;
+}
+
+.empty-state h4 {
+  color: var(--bw-ink);
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  color: var(--bw-muted);
+  margin: 0;
+}
+
+@media (max-width: 767px) {
+  .store-shell {
+    padding: 22px;
+    border-radius: 24px;
+  }
+
+  .store-title {
+    font-size: 28px;
+  }
+
+  .store-actions {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+</style>
+
+<section class="store-hero">
+  <div class="container">
+    <div class="store-shell">
+      <div class="store-topbar">
+        <div>
+          <div class="store-eyebrow"><i class="fas fa-sparkles"></i> Curated collection</div>
+          <div class="store-title">Discover Your Next Favorite Book</div>
+          <p class="store-subtitle">A cleaner, more premium bookstore experience with faster browsing, modern cards, and polished actions for cart and wishlist.</p>
+        </div>
+        <div class="store-summary">
+          <div class="store-pill">
+            <strong>{{ products|length }}</strong>
+            <span>Books Available</span>
+          </div>
+          <div class="store-pill">
+            <strong>Fast</strong>
+            <span>Cart & Wishlist</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="store-grid">
+        {% for product in products %}
+        <div class="store-card">
+          <div class="store-card-media">
+            <div class="store-badge"><i class="fas fa-book-open"></i> Featured</div>
+        <a href="{% url 'product' product.id %}">
+          {% if product.imageURL and "herald" not in product.imageURL|lower and "college" not in product.imageURL|lower %}
+          <img src="{{ product.imageURL }}" alt="{{ product.Book_name }}">
+          {% else %}
+          <img src="{% static 'images/default-book.jpg' %}" alt="{{ product.Book_name }}">
+          {% endif %}
+        </a>
+          </div>
+          <div class="store-body">
+            <h5>{{ product.Book_name }}</h5>
+            <div class="store-meta-row">
+              <span class="store-chip"><i class="fas fa-layer-group"></i> {{ product.genre }}</span>
+              <span class="store-chip"><i class="fas fa-user-edit"></i> {{ product.Author }}</span>
+            </div>
+            <div class="store-price-row">
+              <div class="store-price">
+                <small>Starting from</small>
+                Rs {{ product.price|floatformat:2 }}
+              </div>
+              <div class="store-rating">
+                <i class="fas fa-star"></i>
+                <span>4.8</span>
+              </div>
+            </div>
+            <div class="store-actions">
+              <a href="{% url 'product' product.id %}" class="btn-details">
+                View Details
+                <i class="fas fa-arrow-right"></i>
+              </a>
+              <button data-product="{{product.id}}" data-action="add" class="icon-btn cart-btn update-cart" title="Add to cart">
+                <i class="fas fa-cart-plus"></i>
+              </button>
+              {% csrf_token %}
+              <span class="product_data addToWishlist icon-btn wish-btn" title="Add to wishlist">
+                <i class="fas fa-heart"></i>
+                <input type="hidden" value="{{product.id}}" class="prod_id">
+              </span>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+          <i class="fas fa-books"></i>
+          <h4>No books available right now</h4>
+          <p>New titles will appear here as soon as they are added to the store.</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  var updateBtns = document.getElementsByClassName('update-cart')
+
+  for (var i = 0; i < updateBtns.length; i++) {
+    updateBtns[i].addEventListener('click', function () {
+      var productId = this.dataset.product
+      var action = this.dataset.action
+
+      if (user == 'AnonymousUser') {
+        alert('Please login first to add items to cart!')
+        window.location.href = '/login/'
+      } else {
+        updateUserOrder(productId, action)
+      }
+    })
+  }
+
+  function updateUserOrder(productId, action) {
+    var url = '/update_item/'
+
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken,
+      },
+      body: JSON.stringify({ 'productId': productId, 'action': action })
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        alertify.success('Item added to cart!')
+        setTimeout(function () { location.reload() }, 800)
+      })
+  }
+
+  $('.addToWishlist').click(function (e) {
+    e.preventDefault()
+
+    var product_id = $(this).closest('.product_data').find('.prod_id').val()
+    var token = csrftoken
+
+    $.ajax({
+      type: "POST",
+      url: "/add-to-wishlist",
+      data: {
+        'product_id': product_id,
+        csrfmiddlewaretoken: token
+      },
+      success: function (response) {
+        alertify.success(response.status)
+      }
+    })
+  })
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"
+  integrity="sha384-SR1sx49pcuLnqZUnnPwx6FCym0wLsk5JZuNx2bPPENzswTNFaQU1RDvt3wT4gWFG"
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.min.js"
+  integrity="sha384-j0CNLUeiqtyaRmlzUHCPZ+Gy5fQu0dQ6eZ/xAww941Ai1SxSY+0EQqNXNE6DZiVc"
+  crossorigin="anonymous"></script>
+
+{% include 'components/footer/footer.html' %}
+
+{% include 'components/base/base-bottom.html' %}

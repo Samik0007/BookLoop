@@ -1,0 +1,488 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account — Book Loop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            background: #faf7f2;
+            overflow-x: hidden;
+        }
+
+        /* ─── LEFT PANEL — BOOK SHOWCASE ─── */
+        .left-panel {
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        .left-panel .bg-image {
+            position: absolute; inset: 0;
+            background: url('https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=1200&q=80') center/cover no-repeat;
+            z-index: 0;
+        }
+        .left-panel .overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(
+                to top,
+                rgba(10, 10, 10, .93) 0%,
+                rgba(10, 10, 10, .6) 45%,
+                rgba(10, 10, 10, .25) 75%,
+                rgba(10, 10, 10, .1) 100%
+            );
+            z-index: 1;
+        }
+        .left-content {
+            position: relative; z-index: 2;
+            padding: 50px 44px;
+        }
+        .left-content .logo-area {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 28px;
+        }
+        .left-content .logo-area .logo-icon {
+            width: 46px; height: 46px;
+            background: linear-gradient(135deg, #1f8a70, #f28f3b);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; color: #fff;
+        }
+        .left-content .logo-area h3 {
+            font-family: 'Playfair Display', serif;
+            color: #fff; font-weight: 700; font-size: 1.45rem;
+        }
+        .left-content .logo-area h3 span { color: #f28f3b; }
+
+        .left-content h1 {
+            font-family: 'Playfair Display', serif;
+            color: #fff;
+            font-size: 2.6rem;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 14px;
+        }
+        .left-content h1 em { font-style: italic; color: #f28f3b; }
+        .left-content p.tagline {
+            color: rgba(255,255,255,.7);
+            font-size: 1rem;
+            max-width: 400px;
+            line-height: 1.7;
+            margin-bottom: 32px;
+        }
+
+        /* Steps */
+        .journey-steps {
+            list-style: none; padding: 0;
+            display: flex; flex-direction: column; gap: 14px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255,255,255,.12);
+        }
+        .journey-steps li {
+            display: flex; align-items: center; gap: 14px;
+            color: rgba(255,255,255,.85);
+            font-size: .92rem;
+        }
+        .journey-steps li .step-num {
+            width: 36px; height: 36px;
+            background: rgba(132, 198, 57, .2);
+            border: 1.5px solid rgba(132, 198, 57, .4);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Playfair Display', serif;
+            font-weight: 800; font-size: .85rem;
+            color: #f28f3b;
+            flex-shrink: 0;
+        }
+
+        /* Floating quote */
+        .book-quote {
+            position: absolute; top: 50px; left: 44px;
+            z-index: 2;
+            background: rgba(255,255,255,.08);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 16px;
+            padding: 18px 22px;
+            max-width: 300px;
+            color: #fff;
+        }
+        .book-quote p {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: .9rem;
+            line-height: 1.55;
+            margin-bottom: 6px;
+        }
+        .book-quote cite {
+            font-style: normal;
+            font-size: .75rem;
+            color: rgba(255,255,255,.45);
+        }
+
+        /* ─── RIGHT PANEL — FORM ─── */
+        .right-panel {
+            flex: 1.1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 36px 40px;
+            background: #faf7f2;
+            overflow-y: auto;
+        }
+        .form-card {
+            width: 100%; max-width: 480px;
+        }
+
+        .mobile-logo {
+            display: none;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .mobile-logo h2 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700; color: #1a1a1a; font-size: 1.4rem;
+        }
+        .mobile-logo h2 span { color: #1f8a70; }
+
+        .home-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            color: #1f8a70; text-decoration: none; font-weight: 600;
+            font-size: .85rem; margin-bottom: 22px;
+            transition: all .25s;
+        }
+        .home-link:hover { color: #156d58; gap: 8px; }
+
+        .form-card h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.85rem; font-weight: 700;
+            color: #1a1a1a; margin-bottom: 4px;
+        }
+        .form-card .subtitle {
+            color: #888; margin-bottom: 24px;
+            font-size: .9rem; line-height: 1.5;
+        }
+
+        /* Google */
+        .btn-google {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 12px;
+            border: 1.5px solid #e0dcd4; border-radius: 14px;
+            background: #fff; color: #1a1a1a;
+            font-weight: 600; font-size: .93rem;
+            cursor: pointer; transition: all .25s;
+            text-decoration: none;
+        }
+        .btn-google:hover {
+            border-color: #c5c0b6; background: #fff;
+            box-shadow: 0 4px 16px rgba(0,0,0,.06);
+            transform: translateY(-1px);
+            color: #1a1a1a; text-decoration: none;
+        }
+
+        .divider {
+            display: flex; align-items: center; gap: 14px;
+            margin: 20px 0; color: #b5b0a6; font-size: .8rem;
+        }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #e8e4dc; }
+
+        /* Fields */
+        .field { margin-bottom: 16px; }
+        .field label {
+            display: block; font-weight: 600; font-size: .78rem;
+            color: #666; margin-bottom: 6px; letter-spacing: .5px;
+            text-transform: uppercase;
+        }
+        .field .input-wrap { position: relative; }
+        .field .input-wrap i {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            color: #bbb; font-size: .85rem; transition: color .25s;
+        }
+        .field input[type="text"],
+        .field input[type="email"],
+        .field input[type="password"] {
+            width: 100%; padding: 12px 14px 12px 42px;
+            border: 1.5px solid #e0dcd4; border-radius: 14px;
+            font-size: .92rem; background: #fff;
+            transition: all .25s; outline: none; color: #1a1a1a;
+        }
+        .field input:focus {
+            border-color: #1f8a70; background: #fff;
+            box-shadow: 0 0 0 4px rgba(25,135,84,.08);
+        }
+        .field .input-wrap:focus-within i { color: #1f8a70; }
+
+        .row-2col { display: flex; gap: 12px; }
+        .row-2col .field { flex: 1; }
+
+        .error-text { color: #ef4444; font-size: .78rem; margin-top: 4px; display: block; }
+        .help-text  { color: #aaa; font-size: .76rem; margin-top: 4px; display: block; }
+
+        /* Password strength */
+        .strength-bar { height: 4px; border-radius: 2px; background: #e8e4dc; margin-top: 6px; overflow: hidden; }
+        .strength-bar .fill { height: 100%; width: 0; border-radius: 2px; transition: all .3s; }
+
+        /* Radio group */
+        .radio-group { margin-bottom: 16px; }
+        .radio-group label.group-label {
+            display: block; font-weight: 600; font-size: .78rem;
+            color: #666; margin-bottom: 8px; letter-spacing: .5px;
+            text-transform: uppercase;
+        }
+        .radio-row { display: flex; gap: 12px; }
+        .radio-row label {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 16px;
+            border: 1.5px solid #e0dcd4;
+            border-radius: 12px; cursor: pointer;
+            font-size: .88rem; color: #555;
+            transition: all .2s; flex: 1; justify-content: center;
+            background: #fff;
+        }
+        .radio-row label:has(input:checked) {
+            border-color: #1f8a70;
+            background: #f0fdf4;
+            color: #166534;
+        }
+        .radio-row input[type="radio"] { accent-color: #1f8a70; }
+
+        /* Terms */
+        .terms {
+            margin-bottom: 18px;
+            display: flex; align-items: flex-start; gap: 8px;
+            font-size: .82rem; color: #777;
+        }
+        .terms input { accent-color: #1f8a70; margin-top: 3px; }
+        .terms a { color: #1f8a70; text-decoration: none; font-weight: 600; }
+        .terms a:hover { color: #156d58; }
+
+        /* Submit */
+        .btn-submit {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #1f8a70 0%, #22a885 100%);
+            border: none; border-radius: 14px;
+            color: #fff; font-size: .98rem; font-weight: 700;
+            cursor: pointer; transition: all .25s;
+            box-shadow: 0 4px 16px rgba(25,135,84,.2);
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(25,135,84,.35);
+        }
+
+        .bottom-link { text-align: center; margin-top: 20px; font-size: .88rem; color: #888; }
+        .bottom-link a { color: #1f8a70; font-weight: 700; text-decoration: none; }
+        .bottom-link a:hover { color: #156d58; text-decoration: underline; }
+        .footer-text { text-align: center; margin-top: 24px; font-size: .76rem; color: #bbb; }
+
+        /* Alerts */
+        .alert-box {
+            padding: 12px 16px; border-radius: 12px;
+            margin-bottom: 16px; font-size: .86rem;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .alert-box.danger  { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-box.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .alert-box.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 992px) {
+            .left-panel { display: none; }
+            body { background: #faf7f2; }
+            .right-panel { flex: 1; padding: 28px 20px; }
+            .mobile-logo { display: block; }
+            .row-2col { flex-direction: column; gap: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ─── LEFT — BOOK IMAGE SHOWCASE ─── -->
+<div class="left-panel">
+    <div class="bg-image"></div>
+    <div class="overlay"></div>
+
+    <div class="book-quote">
+        <p>"The more that you read, the more things you will know. The more that you learn, the more places you'll go."</p>
+        <cite>— Dr. Seuss</cite>
+    </div>
+
+    <div class="left-content">
+        <div class="logo-area">
+            <div class="logo-icon"><i class="fa-solid fa-book-open"></i></div>
+            <h3>Book <span>Loop</span></h3>
+        </div>
+        <h1>Start Your<br><em>Reading Journey</em></h1>
+        <p class="tagline">Create an account and unlock a world of AI-curated book recommendations made just for you.</p>
+
+        <ul class="journey-steps">
+            <li><span class="step-num">1</span> Create your free account</li>
+            <li><span class="step-num">2</span> Verify with a one-time code</li>
+            <li><span class="step-num">3</span> Get personalised book picks</li>
+            <li><span class="step-num">4</span> Start reading &amp; shopping!</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ─── RIGHT — REGISTER FORM ─── -->
+<div class="right-panel">
+    <div class="form-card">
+        <div class="mobile-logo"><h2>Book <span>Loop</span></h2></div>
+
+        <a href="{% url 'home' %}" class="home-link">
+            <i class="fa-solid fa-arrow-left"></i> Back to Home
+        </a>
+
+        <h2>Create your account</h2>
+        <p class="subtitle">Start your reading journey today — it's free!</p>
+
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert-box {% if 'success' in message.tags %}success{% elif 'error' in message.tags %}danger{% elif 'warning' in message.tags %}warning{% else %}warning{% endif %}">
+                    <i class="fa-solid {% if 'success' in message.tags %}fa-circle-check{% elif 'warning' in message.tags %}fa-triangle-exclamation{% else %}fa-circle-info{% endif %}"></i> {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if form.errors %}
+            <div class="alert-box danger">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                Please fix the errors below to continue.
+            </div>
+        {% endif %}
+
+        <!-- Google -->
+        <a href="/accounts/google/login/?process=login" class="btn-google">
+            <svg width="20" height="20" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.07 5.07 0 01-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Continue with Google
+        </a>
+
+        <div class="divider">or register with email</div>
+
+        <!-- Form -->
+        <form method="POST" action="{% url 'reg' %}">
+            {% csrf_token %}
+
+            <div class="row-2col">
+                <div class="field">
+                    <label for="id_first_name">First Name</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="id_first_name" name="first_name" placeholder="Samik" required value="{{ form.first_name.value|default:'' }}">
+                    </div>
+                    {% if form.first_name.errors %}<span class="error-text">{{ form.first_name.errors.0 }}</span>{% endif %}
+                </div>
+                <div class="field">
+                    <label for="id_last_name">Last Name</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="id_last_name" name="last_name" placeholder="Bhandari" required value="{{ form.last_name.value|default:'' }}">
+                    </div>
+                    {% if form.last_name.errors %}<span class="error-text">{{ form.last_name.errors.0 }}</span>{% endif %}
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="id_username">Username</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-at"></i>
+                    <input type="text" id="id_username" name="username" placeholder="Choose a username" required value="{{ form.username.value|default:'' }}">
+                </div>
+                {% if form.username.errors %}<span class="error-text">{{ form.username.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="field">
+                <label for="id_email">Email Address</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" id="id_email" name="email" placeholder="your@email.com" required value="{{ form.email.value|default:'' }}">
+                </div>
+                {% if form.email.errors %}<span class="error-text">{{ form.email.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="field">
+                <label for="id_password1">Password</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="id_password1" name="password1" placeholder="Create a strong password" required autocomplete="new-password">
+                </div>
+                {% if form.password1.errors %}<span class="error-text">{{ form.password1.errors.0 }}</span>{% endif %}
+                <div class="strength-bar"><div class="fill" id="strengthLevel"></div></div>
+            </div>
+
+            <div class="field">
+                <label for="id_password2">Confirm Password</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <input type="password" id="id_password2" name="password2" placeholder="Re-enter your password" required autocomplete="new-password">
+                </div>
+                {% if form.password2.errors %}<span class="error-text">{{ form.password2.errors.0 }}</span>{% endif %}
+                <span class="help-text">Min 8 characters with letters, numbers &amp; symbols.</span>
+            </div>
+
+            <div class="radio-group">
+                <label class="group-label">Register as</label>
+                <div class="radio-row">
+                    <label><input type="radio" name="register_as" value="student" checked> Student</label>
+                    <label><input type="radio" name="register_as" value="bookshop"> Bookshop</label>
+                </div>
+            </div>
+
+            <div class="terms">
+                <input type="checkbox" id="terms" name="terms" required>
+                <label for="terms">I agree to the <a href="#">Terms &amp; Conditions</a> and <a href="#">Privacy Policy</a></label>
+            </div>
+
+            {% if form.non_field_errors %}
+                <div class="alert-box danger">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+            {% endif %}
+
+            <button type="submit" class="btn-submit">
+                <i class="fa-solid fa-user-plus"></i>&nbsp; Create Account
+            </button>
+        </form>
+
+        <div class="bottom-link">
+            Already have an account? <a href="{% url 'login' %}">Sign in</a>
+        </div>
+        <div class="footer-text">
+            Developed by <strong>Samik Bhandari</strong> · Book Loop &copy; 2026
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('id_password1').addEventListener('input', function () {
+        var pw = this.value, bar = document.getElementById('strengthLevel'), s = 0;
+        if (pw.length >= 8) s += 25;
+        if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s += 25;
+        if (/\d/.test(pw)) s += 25;
+        if (/[^a-zA-Z0-9]/.test(pw)) s += 25;
+        bar.style.width = s + '%';
+        bar.style.background = s <= 25 ? '#ef4444' : s <= 50 ? '#f59e0b' : s <= 75 ? '#3b82f6' : '#22c55e';
+    });
+</script>
+</body>
+</html>

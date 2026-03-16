@@ -1,0 +1,238 @@
+{% load static %}
+
+{% include 'components/base/base-top.html' %}
+<!-- bootstrap css -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+
+<!-- icon css -->
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.3/css/all.css"
+    integrity="sha384-SZXxX4whJ79/gErwcOYf+zWLeJdY/qpuqC4cAa9rOGUstPomtqpuNWT9wdPEn2fk" crossorigin="anonymous">
+
+{% include 'components/header/header.html' %}
+
+<style>
+:root {
+  --bw-ink: #0b1f2a;
+  --bw-muted: #52616b;
+  --bw-accent: #1f8a70;
+}
+
+.search-hero {
+  padding: 30px 0 10px;
+}
+
+.search-title {
+  font-family: 'Merriweather', serif;
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+
+.search-card {
+  border-radius: 18px;
+  border: 1px solid #efe8da;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 10px 25px rgba(27, 27, 31, 0.08);
+  height: 100%;
+}
+
+.search-card img {
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+}
+
+.search-card-body {
+  padding: 16px;
+}
+
+.search-card-body h5 {
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.search-meta {
+  color: var(--bw-muted);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.search-price {
+  color: var(--bw-accent);
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-actions .btn-details {
+  background: var(--bw-accent);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.search-actions .icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #e6e1d7;
+  background: #fff;
+  color: var(--bw-ink);
+}
+</style>
+
+<section class="search-hero">
+  <div class="container">
+    <div class="search-title">Search Results</div>
+    <p class="text-muted">Results for "{{ query }}" ({{ result_count }})</p>
+    <hr>
+  </div>
+</section>
+
+<section class="container">
+  <div class="row g-4">
+    {% if books %}
+      {% for book in books %}
+      <div class="col-xl-3 col-lg-4 col-md-6">
+        <div class="search-card">
+          <a href="{% url 'product' book.id %}">
+            {% if book.imageURL and "herald" not in book.imageURL|lower and "college" not in book.imageURL|lower %}
+            <img src="{{ book.imageURL }}" alt="{{ book.Book_name }}">
+            {% else %}
+            <img src="{% static 'images/default-book.jpg' %}" alt="{{ book.Book_name }}">
+            {% endif %}
+          </a>
+          <div class="search-card-body">
+            <h5>{{ book.Book_name }}</h5>
+            <div class="search-meta">{{ book.genre }}</div>
+            <div class="search-meta"><i class="fas fa-user"></i> {{ book.Author }}</div>
+            <div class="search-price">Rs {{ book.price|floatformat:2 }}</div>
+            <div class="search-actions">
+              <a href="{% url 'product' book.id %}" class="btn-details">Details</a>
+              <button data-product="{{book.id}}" data-action="add" class="icon-btn update-cart">
+                <i class="fas fa-cart-plus"></i>
+              </button>
+              <span class="product_data addToWishlist icon-btn">
+                <i class="fas fa-heart"></i>
+                <input type="hidden" value="{{book.id}}" class="prod_id">
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p>No products found. Try a different keyword.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="container" style="margin-top: 50px;">
+  <div class="mb-4">
+    <div class="search-title">Recommended Books for You</div>
+    <p class="text-muted">Based on your browsing and wishlist activity.</p>
+    <hr>
+  </div>
+
+  <div class="row g-4">
+    {% if recommended_books %}
+      {% for book in recommended_books %}
+      <div class="col-xl-3 col-lg-4 col-md-6">
+        <div class="search-card">
+          <a href="{% url 'product' book.id %}">
+            {% if book.imageURL and "herald" not in book.imageURL|lower and "college" not in book.imageURL|lower %}
+            <img src="{{ book.imageURL }}" alt="{{ book.Book_name }}">
+            {% else %}
+            <img src="{% static 'images/default-book.jpg' %}" alt="{{ book.Book_name }}">
+            {% endif %}
+          </a>
+          <div class="search-card-body">
+            <h5>{{ book.Book_name }}</h5>
+            <div class="search-meta">{{ book.genre }}</div>
+            <div class="search-meta"><i class="fas fa-user"></i> {{ book.Author }}</div>
+            <div class="search-price">Rs {{ book.price }}</div>
+            <div class="search-actions">
+              <a href="{% url 'product' book.id %}" class="btn-details">Details</a>
+              <button data-product="{{book.id}}" data-action="add" class="icon-btn update-cart">
+                <i class="fas fa-cart-plus"></i>
+              </button>
+              <span class="icon-btn">
+                <i class="fas fa-heart"></i>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p>No recommendations available.</p>
+    {% endif %}
+  </div>
+</section>
+
+<script>
+  var updateBtns = document.getElementsByClassName('update-cart')
+
+  for (i = 0; i < updateBtns.length; i++) {
+    updateBtns[i].addEventListener('click', function () {
+      var productId = this.dataset.product
+      var action = this.dataset.action
+
+      if (user == 'AnonymousUser') {
+        alert('Please login first to add items to cart!')
+        window.location.href = '/login/'
+      } else {
+        updateUserOrder(productId, action)
+      }
+    })
+  }
+
+  function updateUserOrder(productId, action) {
+    var url = '/update_item/'
+
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken,
+      },
+      body: JSON.stringify({ 'productId': productId, 'action': action })
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        location.reload()
+      })
+  }
+
+  $('.addToWishlist').click(function (e) {
+    e.preventDefault()
+
+    var product_id = $(this).closest('.product_data').find('.prod_id').val()
+    var token = csrftoken
+
+    $.ajax({
+      type: "POST",
+      url: "/add-to-wishlist",
+      data: {
+        'product_id': product_id,
+        csrfmiddlewaretoken: token
+      },
+      success: function (response) {
+        alert(response.status)
+      }
+    })
+  })
+</script>
+
+{% include 'components/footer/footer.html' %}
+
+{% include 'components/base/base-bottom.html' %}
