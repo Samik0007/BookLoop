@@ -1,0 +1,118 @@
+{% load static %}
+{% include 'components/base/base-top.html' %}
+{% include 'components/header/header.html' %}
+
+<style>
+  .swap-browse-page {
+    padding: 52px 0 64px;
+    min-height: calc(100vh - 220px);
+    background: radial-gradient(circle at 10% 0%, #f7f3eb 0%, #ffffff 40%, #eef6f3 100%);
+  }
+  .swap-browse-header h1 {
+    font-family: 'Merriweather', serif;
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+  .swap-browse-header p {
+    color: #52616b;
+    margin-bottom: 0;
+  }
+  .swap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-top: 26px;
+  }
+  .swap-card {
+    border-radius: 18px;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid #f2ece0;
+    box-shadow: 0 10px 26px rgba(27, 27, 31, 0.08);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .swap-card img {
+    width: 100%;
+    height: 270px;
+    object-fit: cover;
+  }
+  .swap-card-body {
+    padding: 15px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .swap-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .swap-meta {
+    font-size: 13px;
+    color: #52616b;
+    margin-bottom: 5px;
+  }
+</style>
+
+<section class="swap-browse-page">
+  <div class="container">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 swap-browse-header">
+      <div>
+        <h1>Browse All Swap Listings</h1>
+        <p>Find approved student listings and connect for direct academic book swaps.</p>
+      </div>
+      <a href="{% url 'add_swap_book' %}" class="btn btn-success">+ Add Book to Swap</a>
+    </div>
+
+    <div class="swap-grid">
+      {% for book in books %}
+        <div class="swap-card">
+            {% if book.image and "herald" not in book.image.url|lower and "college" not in book.image.url|lower %}
+            <img class="book-cover-img" src="{{ book.image.url }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
+            {% else %}
+            <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
+            {% endif %}
+          <div class="swap-card-body">
+            <span class="badge bg-info text-dark mb-2">🔄 Available for Swap</span>
+            <div class="swap-card-title">{{ book.Book_name|truncatewords:6 }}</div>
+            <div class="swap-meta">Owner: {{ book.seller.username|default:"BookLoop User" }}</div>
+            <div class="swap-meta">Location: {{ book.location|default:"Not specified" }}</div>
+            <div class="swap-meta">Looking for: {{ book.swap_preference|default:"Open to offers"|truncatechars:45 }}</div>
+            <a href="{% url 'product' book.id %}" class="btn btn-outline-success mt-3">View Details</a>
+          </div>
+        </div>
+      {% empty %}
+        <div class="alert alert-light border text-center" role="alert">
+          No approved swap listings available right now.
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+      <nav class="mt-4" aria-label="Swap listing pagination">
+        <ul class="pagination justify-content-center">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+          {% endif %}
+
+          <li class="page-item disabled">
+            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+          </li>
+
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  </div>
+</section>
+
+{% include 'components/footer/footer.html' %}
+{% include 'components/base/base-bottom.html' %}

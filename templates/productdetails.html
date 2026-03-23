@@ -140,7 +140,7 @@ body {
 
 .product-highlight-bar {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 22px;
 }
@@ -223,7 +223,7 @@ body {
 
 .product-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 12px;
   margin-top: 10px;
 }
@@ -234,9 +234,13 @@ body {
   justify-content: center;
   gap: 9px;
   min-height: 54px;
+  padding: 0 14px;
   border-radius: 16px;
   font-weight: 700;
   border: none;
+  font-size: 13px;
+  line-height: 1.2;
+  min-width: 0;
   transition: all 0.22s ease;
   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
 }
@@ -338,9 +342,6 @@ body {
 }
 
 .similar-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 20px;
   margin-top: 18px;
 }
 
@@ -445,7 +446,7 @@ body {
                 {% if data.imageURL and "herald" not in data.imageURL|lower and "college" not in data.imageURL|lower %}
                 <img src="{{ data.imageURL }}" alt="{{ data.Book_name }}">
                 {% else %}
-                <img src="{% static 'images/default-book.jpg' %}" alt="{{ data.Book_name }}">
+                <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ data.Book_name }}">
                 {% endif %}
               </div>
             </div>
@@ -476,10 +477,6 @@ body {
                   <small>Checkout</small>
                   <strong>Fast & secure</strong>
                 </div>
-                <div class="product-highlight">
-                  <small>Recommendation</small>
-                  <strong>AI-powered picks</strong>
-                </div>
               </div>
 
               <div class="product-price-panel">
@@ -507,7 +504,7 @@ body {
                   <i class="fas fa-cart-plus"></i>
                   Add to Cart
                 </button>
-                <button class="btn btn-buy" onclick="buyNow(event, {{ data.id }})">
+                <button class="btn btn-buy btn-buy-now" type="button" data-product="{{ data.id }}">
                   <i class="fas fa-bolt"></i>
                   Buy Now
                 </button>
@@ -565,24 +562,26 @@ body {
           <p>Similar books selected from your current interest in author and genre.</p>
         </div>
 
-        <div class="similar-grid">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 justify-content-start similar-grid">
           {% for book in similar_books %}
-          <div class="similar-card">
-            {% if book.image and "herald" not in book.image.url|lower and "college" not in book.image.url|lower %}
-              <img src="{{ book.image.url }}" alt="{{ book.Book_name }}">
-            {% else %}
-              <img src="{% static 'images/default-book.jpg' %}" alt="{{ book.Book_name }}">
-            {% endif %}
-            <div class="similar-body">
-              <h6>{{ book.Book_name|truncatewords:4 }}</h6>
-              <div class="similar-meta">{{ book.Author|truncatewords:2 }}</div>
-              <div class="similar-price-row">
-                <div class="similar-price">Rs. {{ book.price }}</div>
-                <div class="similar-actions">
-                  <a href="{% url 'product' book.id %}">
-                    View
-                    <i class="fas fa-arrow-right"></i>
-                  </a>
+          <div class="col">
+            <div class="similar-card h-100">
+              {% if book.image and "herald" not in book.image.url|lower and "college" not in book.image.url|lower %}
+                <img class="book-cover-img" src="{{ book.image.url }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
+              {% else %}
+                <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
+              {% endif %}
+              <div class="similar-body">
+                <h6>{{ book.Book_name|truncatewords:4 }}</h6>
+                <div class="similar-meta">{{ book.Author|truncatewords:2 }}</div>
+                <div class="similar-price-row">
+                  <div class="similar-price">Rs. {{ book.price }}</div>
+                  <div class="similar-actions">
+                    <a href="{% url 'product' book.id %}">
+                      View
+                      <i class="fas fa-arrow-right"></i>
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -623,6 +622,14 @@ body {
         addToCart(productId, action)
       }
     })
+
+  var buyNowBtns = document.getElementsByClassName('btn-buy-now')
+  for (var j = 0; j < buyNowBtns.length; j++) {
+    buyNowBtns[j].addEventListener('click', function(e) {
+      var productId = this.dataset.product
+      buyNow(e, productId)
+    })
+  }
   }
 
   function addToCart(productId, action) {

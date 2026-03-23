@@ -229,7 +229,12 @@ h1, h2, h3 {
 
 .book-card img {
     width: 100%;
-    height: 280px;
+}
+
+.book-cover {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    height: auto;
     object-fit: cover;
 }
 
@@ -323,8 +328,6 @@ h1, h2, h3 {
 
 .reco-image img {
     width: 100%;
-    height: 280px;
-    object-fit: cover;
 }
 
 .reco-body {
@@ -432,13 +435,14 @@ h1, h2, h3 {
             <p>Browse the full Book Loop collection.</p>
         </div>
     </div>
-    <div class="book-grid">
+    <div class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-4 justify-content-start">
         {% for book in all_books %}
-        <div class="book-card">
+        <div class="col">
+        <div class="book-card h-100">
             {% if book.image and "herald" not in book.image.url|lower and "college" not in book.image.url|lower %}
-            <img src="{{ book.image.url }}" alt="{{ book.Book_name }}">
+            <img class="book-cover-img" src="{{ book.image.url }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
             {% else %}
-            <img src="{% static 'images/default-book.jpg' %}" alt="{{ book.Book_name }}">
+            <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
             {% endif %}
             <div class="book-body">
                 <h5>{{ book.Book_name|truncatewords:5 }}</h5>
@@ -449,6 +453,7 @@ h1, h2, h3 {
             <div class="book-actions">
                 <a href="{% url 'product' book.id %}"><i class="fas fa-arrow-right"></i> View</a>
             </div>
+        </div>
         </div>
         {% empty %}
         <p style="color: var(--muted);">No books available right now.</p>
@@ -464,7 +469,7 @@ h1, h2, h3 {
         </div>
     </div>
     <div class="gallery">
-        <a class="gallery-card" href="store/">
+        <a class="gallery-card" href="{% url 'discount_offers' %}">
             <img src="{% static 'images/hey1.jpg' %}" alt="Discount Offers">
             <h4>Discount Offers</h4>
         </a>
@@ -482,17 +487,52 @@ h1, h2, h3 {
 <section class="container panel">
     <div class="section-title">
         <div>
+            <h2>Books Available for Swap</h2>
+            <p>Trade your books with fellow students instead of buying new ones.</p>
+        </div>
+        <a href="{% url 'browse_swaps' %}" class="btn-outline-custom" style="text-decoration:none;">View All Swaps</a>
+    </div>
+    <div class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-4 justify-content-start">
+        {% for book in swap_books %}
+        <div class="col">
+        <div class="book-card h-100">
+            {% if book.image and "herald" not in book.image.url|lower and "college" not in book.image.url|lower %}
+            <img class="book-cover-img" src="{{ book.image.url }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
+            {% else %}
+            <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
+            {% endif %}
+            <div class="book-body">
+                <span class="badge bg-info text-dark mb-2">🔄 Available for Swap</span>
+                <h5>{{ book.Book_name|truncatewords:5 }}</h5>
+                <p>Owner: {{ book.seller.username|default:"BookLoop User" }}</p>
+                <small class="text-muted">Looking for: {{ book.swap_preference|default:"Open to offers"|truncatechars:30 }}</small>
+            </div>
+            <div class="book-actions">
+                <a href="{% url 'product' book.id %}"><i class="fas fa-arrow-right"></i> View</a>
+            </div>
+        </div>
+        </div>
+        {% empty %}
+        <p style="color: var(--muted);">No swap listings available yet.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="container panel">
+    <div class="section-title">
+        <div>
             <h2>Famous Books</h2>
             <p>Reader favorites that never go out of style.</p>
         </div>
     </div>
-    <div class="book-grid">
+    <div class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-4 justify-content-start">
         {% for book in featured_books %}
-        <div class="book-card">
+        <div class="col">
+        <div class="book-card h-100">
             {% if book.image and "herald" not in book.image.url|lower and "college" not in book.image.url|lower %}
-            <img src="{{ book.image.url }}" alt="{{ book.Book_name }}">
+            <img class="book-cover-img" src="{{ book.image.url }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
             {% else %}
-            <img src="{% static 'images/default-book.jpg' %}" alt="{{ book.Book_name }}">
+            <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
             {% endif %}
             <div class="book-body">
                 <h5>{{ book.Book_name|truncatewords:5 }}</h5>
@@ -501,6 +541,7 @@ h1, h2, h3 {
             <div class="book-actions">
                 <a href="{% url 'product' book.id %}"><i class="fas fa-arrow-right"></i> View</a>
             </div>
+        </div>
         </div>
         {% empty %}
         <p style="color: var(--muted);">No featured books available.</p>
@@ -515,13 +556,14 @@ h1, h2, h3 {
             <p>Beloved stories from local authors and classics.</p>
         </div>
     </div>
-    <div class="book-grid">
+    <div class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-4 justify-content-start">
         {% for book in nepali_books %}
-        <div class="book-card">
+        <div class="col">
+        <div class="book-card h-100">
             {% if book.image and "herald" not in book.image.url|lower and "college" not in book.image.url|lower %}
-            <img src="{{ book.image.url }}" alt="{{ book.Book_name }}">
+            <img class="book-cover-img" src="{{ book.image.url }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
             {% else %}
-            <img src="{% static 'images/default-book.jpg' %}" alt="{{ book.Book_name }}">
+            <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
             {% endif %}
             <div class="book-body">
                 <h5>{{ book.Book_name|truncatewords:5 }}</h5>
@@ -530,6 +572,7 @@ h1, h2, h3 {
             <div class="book-actions">
                 <a href="{% url 'product' book.id %}"><i class="fas fa-arrow-right"></i> View</a>
             </div>
+        </div>
         </div>
         {% empty %}
         <p style="color: var(--muted);">No Nepali books found.</p>
@@ -562,9 +605,9 @@ h1, h2, h3 {
         <div class="reco-card">
             <div class="reco-image">
                 {% if book.image and "herald" not in book.image.url|lower and "college" not in book.image.url|lower %}
-                <img src="{{ book.image.url }}" alt="{{ book.Book_name }}">
+                <img class="book-cover-img" src="{{ book.image.url }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
                 {% else %}
-                <img src="{% static 'images/default-book.jpg' %}" alt="{{ book.Book_name }}">
+                <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
                 {% endif %}
             </div>
             <div class="reco-body">

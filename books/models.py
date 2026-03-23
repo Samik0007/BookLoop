@@ -1,5 +1,11 @@
 from django.db import models
 from django.utils import timezone
+from django.conf import settings
+
+from decimal import Decimal
+import requests
+from cloudinary.models import CloudinaryField
+from cloudinary.uploader import upload as cloudinary_upload
 
 # -------------------------
 # CHOICES
@@ -18,6 +24,19 @@ METHOD = (
     ("Khalti Pay", "Khalti Pay"),
 )
 
+LISTING_CHOICES = (
+    ("sell", "Sell"),
+    ("swap", "Swap"),
+    ("donate", "Donate"),
+)
+
+LISTING_STATUS = (
+    ("pending", "Pending"),
+    ("approved", "Approved"),
+    ("rejected", "Rejected"),
+    ("archived", "Archived"),
+)
+
 # -------------------------
 # MODELS
 # -------------------------
@@ -30,11 +49,112 @@ class Product(models.Model):
     price = models.IntegerField(default=0)
     pub_date = models.DateField(default=timezone.now)
     quantity = models.PositiveBigIntegerField(default=1)
-    image = models.ImageField(upload_to='books/images', null=True, blank=True)
+    # Optional seller for peer-to-peer listings (swaps/donations)
+    seller = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="products",
+    )
+    listing_type = models.CharField(
+        max_length=10,
+        choices=LISTING_CHOICES,
+        default="sell",
+    )
+    listing_status = models.CharField(
+        max_length=20,
+        choices=LISTING_STATUS,
+        default="approved",
+    )
+    # If listing_type is 'swap', what book or genre does the seller want?
+    swap_preference = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Title or genre of the book you want in exchange.",
+    )
+    condition = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text=(
+            "Physical condition of the book for swapping "
+            "(e.g. New, Like New, Good, Heavily Used)."
+        ),
+    )
+    location = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="City or neighborhood for the swap",
+    )
+    contact_email = models.EmailField(
+        blank=True,
+        null=True,
+        help_text="Email for other users to contact you for swapping",
+    )
+    # Stored in Cloudinary; public ID is managed by Cloudinary and is unique
+    image = CloudinaryField("image", folder="bookloop_covers", null=True, blank=True)
     sequence = models.IntegerField(default=0)
+    # Total number of times this product has been viewed
+    views = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.Book_name
+
+    def save(self, *args, **kwargs):
+        """Override save to auto-fetch a cover into Cloudinary when missing.
+
+        Behaviour:
+        - If ``self.image`` is empty and this save is not part of a manual
+          cleanup (e.g. ``update_fields=['image']``), try to fetch a cover
+          from the Open Library API using the book's title (Book_name).
+        - If a cover is found, upload the image URL directly to Cloudinary
+          and assign the resulting ``public_id`` to ``self.image``.
+        - All external calls are wrapped in try/except with a short timeout,
+          so failures never block saving the Product.
+        """
+
+        update_fields = kwargs.get("update_fields")
+        # Skip auto-fetch if this save explicitly targets the image field
+        # (e.g. during a bulk cleanup command).
+        skip_auto_fetch = update_fields is not None and "image" in update_fields
+
+        if not skip_auto_fetch and not self.image:
+            try:
+                title = (self.Book_name or "").strip()
+                if title:
+                    response = requests.get(
+                        "https://openlibrary.org/search.json",
+                        params={"title": title},
+                        timeout=5,
+                    )
+                    response.raise_for_status()
+                    data = response.json() or {}
+                    docs = data.get("docs") or []
+
+                    cover_id = None
+                    for doc in docs:
+                        cover_i = doc.get("cover_i")
+                        if cover_i:
+                            cover_id = cover_i
+                            break
+
+                    if cover_id:
+                        image_url = f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg"
+                        upload_result = cloudinary_upload(
+                            image_url,
+                            folder="bookloop_covers",
+                        )
+                        public_id = upload_result.get("public_id") if isinstance(upload_result, dict) else None
+                        if public_id:
+                            self.image = public_id
+            except Exception:
+                # Fail quietly – never block saving due to network/API issues.
+                pass
+
+        super().save(*args, **kwargs)
 
     @property
     def imageURL(self):
@@ -42,6 +162,29 @@ class Product(models.Model):
             return self.image.url
         except:
             return ""
+
+    @property
+    def display_price(self) -> Decimal:
+        """Return the effective display price.
+
+        Donations are always shown as 0, while other listing types
+        reuse the dynamic discounted price logic.
+        """
+
+        if self.listing_type == "donate":
+            return Decimal("0.00")
+        return self.discounted_price
+
+    @property
+    def discounted_price(self) -> Decimal:
+        """Return a dynamic 10% discounted price without changing base price.
+
+        The underlying ``price`` field remains the source of truth in the
+        database. This property is safe for business logic and can be used
+        directly in templates.
+        """
+
+        return round(Decimal(self.price) * Decimal("0.90"), 2)
 
 
 class Order(models.Model):

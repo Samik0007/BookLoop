@@ -3,15 +3,117 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Case, When, IntegerField, Value
+from django.views.generic import ListView
+from django.views.generic.edit import CreateView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse_lazy
 import json
 import datetime
 
 from .models import Product, Order, OrderItem, Wishlist, ShippingAddress
 from .recommendation_engine import get_recommendations_for_user, get_similar_books
+from recommendations.services import get_user_recommendations
 from .user_interaction import (
     track_product_view, track_search, track_cart_addition, 
     track_wishlist_addition, track_purchase
 )
+from .forms import SwapBookForm
+
+
+def _approved_swap_books_queryset():
+    """Return approved swap listings with seller preloaded.
+
+    Uses ``select_related('seller')`` to avoid N+1 queries when templates
+    display seller information.
+    """
+
+    return Product.objects.select_related("seller").filter(
+        listing_type="swap",
+        listing_status="approved",
+    ).order_by("-pub_date")
+
+
+class DiscountOffersView(ListView):
+    """List view for dynamically discounted offers.
+
+    Shows books that have relatively high stock and low view counts,
+    ordered by stock descending. Pricing is handled via the
+    ``discounted_price`` property on ``Product``.
+    """
+
+    model = Product
+    template_name = "discount_offers.html"
+    context_object_name = "discount_books"
+
+    def get_queryset(self):
+        # High stock (quantity) and low interest (views)
+        return (
+            Product.objects.filter(quantity__gte=5, views__lte=50)
+            .order_by("-quantity")
+        )
+
+    def get_context_data(self, **kwargs):  # type: ignore[override]
+        context = super().get_context_data(**kwargs)
+
+        cart_items = 0
+        if self.request.user.is_authenticated:
+            order, _ = Order.objects.get_or_create(
+                user=self.request.user.username,
+                complete=False,
+            )
+            cart_items = order.get_cart_items
+
+        context["cartItems"] = cart_items
+        return context
+
+
+class AddSwapBookView(LoginRequiredMixin, CreateView):
+    """Allow authenticated users to add a book to their swap list.
+
+    Creates a Product with listing_type='swap' and listing_status='pending'.
+    """
+
+    model = Product
+    form_class = SwapBookForm
+    template_name = "books/add_swap_book.html"
+    login_url = reverse_lazy("login")
+
+    def form_valid(self, form):
+        """Populate seller and listing metadata before saving.
+
+        Also ensures required fields like genre have a safe default.
+        """
+
+        form.instance.seller = self.request.user
+        form.instance.listing_type = "swap"
+        form.instance.listing_status = "pending"
+        if not form.instance.contact_email and self.request.user.email:
+            form.instance.contact_email = self.request.user.email
+
+        # Ensure genre is not empty for swap-only listings.
+        if not form.instance.genre:
+            form.instance.genre = "Swap Listing"
+
+        return super().form_valid(form)
+
+    def get_success_url(self):  # type: ignore[override]
+        messages.success(
+            self.request,
+            "Your book was submitted for swapping and is pending review.",
+        )
+        return reverse_lazy("swap_matches")
+
+
+class BrowseSwapBooksView(ListView):
+    """Browse all approved swap listings."""
+
+    model = Product
+    template_name = "books/browse_swaps.html"
+    context_object_name = "books"
+    paginate_by = 12
+
+    def get_queryset(self):  # type: ignore[override]
+        return _approved_swap_books_queryset()
 
 # -------------------------
 # BASIC PAGES
@@ -25,11 +127,15 @@ def index_page(request):
     recommended_books = []
     all_books = Product.objects.all().order_by('-id')
     featured_books = Product.objects.all().order_by('-sequence', '-id')[:4]
-    nepali_books = Product.objects.filter(
-        Q(genre__icontains='nepal') | Q(genre__icontains='nepali')
-    ).order_by('-id')[:4]
-    if not nepali_books.exists():
-        nepali_books = Product.objects.all().order_by('-id')[4:8]
+    nepali_books = (
+        Product.objects.select_related("seller")
+        .filter(
+            Q(genre__icontains="nepali") | Q(genre__icontains="nepal"),
+            listing_status="approved",
+            listing_type="sell",
+        )
+        .order_by("-views", "-pub_date")[:8]
+    )
     
     if request.user.is_authenticated:
         order, _ = Order.objects.get_or_create(
@@ -47,18 +153,22 @@ def index_page(request):
         ).order_by('-order_count')[:8]
         if not recommended_books.exists():
             recommended_books = Product.objects.all()[:8]
+
+    swap_books = _approved_swap_books_queryset()[:8]
     
     return render(request, 'index.html', {
         'cartItems': cartItems,
         'recommended_books': recommended_books,
         'all_books': all_books,
         'featured_books': featured_books,
-        'nepali_books': nepali_books
+        'nepali_books': nepali_books,
+        'swap_books': swap_books,
     })
 
 
 def about(request):
-    return render(request, 'about.html')
+    total_books = Product.objects.count()
+    return render(request, 'about.html', {"total_books": total_books})
 
 
 def profile(request):
@@ -104,9 +214,13 @@ def store(request):
         )
         cartItems = order.get_cart_items
 
+    # Use the optimized hybrid recommendation engine (with Redis + Celery)
+    recommended_books = get_user_recommendations(request.user, limit=8)
+
     return render(request, 'store.html', {
         'products': products,
-        'cartItems': cartItems
+        'cartItems': cartItems,
+        'recommended_books': recommended_books,
     })
 
 

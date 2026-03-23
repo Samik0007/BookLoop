@@ -116,9 +116,7 @@ body {
 }
 
 .wishlist-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(265px, 1fr));
-  gap: 24px;
+  margin-top: 10px;
 }
 
 .wishlist-card {
@@ -367,16 +365,17 @@ body {
         </div>
       </div>
 
-      <div class="wishlist-grid">
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 justify-content-start wishlist-grid">
         {% for item in wishlist %}
-        <div class="wishlist-card">
+        <div class="col">
+        <div class="wishlist-card h-100">
           <div class="wishlist-card-media">
             <div class="wishlist-badge"><i class="fas fa-heart"></i> Wishlisted</div>
         <a href="{% url 'product' item.product.id %}">
           {% if item.product.imageURL and "herald" not in item.product.imageURL|lower and "college" not in item.product.imageURL|lower %}
-          <img src="{{ item.product.imageURL }}" alt="{{ item.product.Book_name }}">
+          <img class="book-cover-img" src="{{ item.product.imageURL }}" alt="{{ item.product.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
           {% else %}
-          <img src="{% static 'images/default-book.jpg' %}" alt="{{ item.product.Book_name }}">
+          <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ item.product.Book_name }}">
           {% endif %}
         </a>
           </div>
@@ -410,6 +409,7 @@ body {
               </form>
             </div>
           </div>
+        </div>
         </div>
         {% empty %}
         <div class="empty-state">

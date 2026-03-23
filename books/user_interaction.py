@@ -5,6 +5,9 @@ Tracks user behavior: views, searches, time spent, etc.
 
 from django.utils import timezone
 
+from recommendations.models import UserInteraction
+from recommendations.signals import log_user_interaction
+
 
 def track_product_view(user, product, session_id=None):
     """
@@ -19,6 +22,17 @@ def track_product_view(user, product, session_id=None):
             interaction_type='view',
             session_id=session_id
         )
+
+        # Increment product view counter for analytics and discount logic
+        try:
+            product.views = (product.views or 0) + 1
+            product.save(update_fields=["views"])
+        except Exception:
+            # Never let a tracking failure impact the user experience
+            pass
+
+        # Log implicit feedback for the recommendation engine
+        log_user_interaction(user=user, book=product, action=UserInteraction.ACTION_VIEW)
         
         # Update genre preference
         if product.genre:
@@ -55,6 +69,9 @@ def track_cart_addition(user, product, session_id=None):
             interaction_type='cart_add',
             session_id=session_id
         )
+
+        # Log implicit feedback for the recommendation engine
+        log_user_interaction(user=user, book=product, action=UserInteraction.ACTION_CART)
         
         # Higher weight for cart additions
         if product.genre:
@@ -76,6 +93,9 @@ def track_wishlist_addition(user, product, session_id=None):
             interaction_type='wishlist_add',
             session_id=session_id
         )
+
+        # Log implicit feedback for the recommendation engine
+        log_user_interaction(user=user, book=product, action=UserInteraction.ACTION_WISHLIST)
         
         # Medium weight for wishlist
         if product.genre:
@@ -97,6 +117,9 @@ def track_purchase(user, product, session_id=None):
             interaction_type='purchase',
             session_id=session_id
         )
+
+        # Log implicit feedback for the recommendation engine
+        log_user_interaction(user=user, book=product, action=UserInteraction.ACTION_PURCHASE)
         
         # Highest weight for purchases
         if product.genre:

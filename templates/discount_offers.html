@@ -1,0 +1,77 @@
+{% load static %}
+{% include 'components/base/base-top.html' %}
+{% include 'components/header/header.html' %}
+
+<section class="store-hero">
+  <div class="container">
+    <div class="store-shell">
+      <div class="store-topbar">
+        <div>
+          <div class="store-eyebrow"><i class="fas fa-tags"></i> Limited time deals</div>
+          <div class="store-title">Smart Discount Offers</div>
+          <p class="store-subtitle">Books with plenty of stock and lower views get an automatic 10% off, without ever changing their original price in the database.</p>
+        </div>
+      </div>
+
+      <div class="store-grid">
+        {% for product in discount_books %}
+        <div class="store-card">
+          <div class="store-card-media">
+            <div class="store-badge"><i class="fas fa-percentage"></i> 10% OFF</div>
+            <a href="{% url 'product' product.id %}">
+              {% if product.image %}
+              <img src="{{ product.image.url }}" alt="{{ product.Book_name }}">
+              {% else %}
+              <img src="{% static 'images/default-cover.jpg' %}" alt="Cover not available">
+              {% endif %}
+            </a>
+          </div>
+          <div class="store-body">
+            <h5>{{ product.Book_name }}</h5>
+            <div class="store-meta-row">
+              <span class="store-chip"><i class="fas fa-layer-group"></i> {{ product.genre }}</span>
+              <span class="store-chip"><i class="fas fa-user-edit"></i> {{ product.Author }}</span>
+            </div>
+            <div class="store-price-row">
+              <div class="store-price">
+                <small>Discounted price</small>
+                <div>
+                  <del>Rs. {{ product.price }}</del>
+                  <span style="margin-left: 8px;">Rs. {{ product.discounted_price }}</span>
+                </div>
+              </div>
+              <div class="store-rating">
+                <i class="fas fa-bolt"></i>
+                <span>Smart deal</span>
+              </div>
+            </div>
+            <div class="store-actions">
+              <a href="{% url 'product' product.id %}" class="btn-details">
+                View Details
+                <i class="fas fa-arrow-right"></i>
+              </a>
+              <button data-product="{{product.id}}" data-action="add" class="icon-btn cart-btn update-cart" title="Add to cart">
+                <i class="fas fa-cart-plus"></i>
+              </button>
+              {% csrf_token %}
+              <span class="product_data addToWishlist icon-btn wish-btn" title="Add to wishlist">
+                <i class="fas fa-heart"></i>
+                <input type="hidden" value="{{product.id}}" class="prod_id">
+              </span>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+          <i class="fas fa-clipboard-list"></i>
+          <h4>No discountable books right now</h4>
+          <p>Once some books have high stock and low views, they will automatically appear here.</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% include 'components/footer/footer.html' %}
+{% include 'components/base/base-bottom.html' %}

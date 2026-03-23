@@ -26,6 +26,19 @@ ul,label{
 body a:hover{
 	text-decoration:none;
 }
+
+/* -------------------------
+   Universal book cover image
+   ------------------------- */
+.book-cover-img{
+	width:100%;
+	aspect-ratio:2 / 3;
+	height:auto;
+	object-fit:cover;
+	object-position:center;
+	border-top-left-radius:inherit;
+	border-top-right-radius:inherit;
+}
 /*-- header --*/
 .fixed{
 	position: fixed;

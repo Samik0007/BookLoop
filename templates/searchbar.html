@@ -105,11 +105,11 @@
       <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="search-card">
           <a href="{% url 'product' book.id %}">
-            {% if book.imageURL and "herald" not in book.imageURL|lower and "college" not in book.imageURL|lower %}
-            <img src="{{ book.imageURL }}" alt="{{ book.Book_name }}">
-            {% else %}
-            <img src="{% static 'images/default-book.jpg' %}" alt="{{ book.Book_name }}">
-            {% endif %}
+                    {% if book.image and "herald" not in book.image.url|lower and "college" not in book.image.url|lower %}
+                    <img class="book-cover-img" src="{{ book.image.url }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
+                    {% else %}
+                    <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
+                    {% endif %}
           </a>
           <div class="search-card-body">
             <h5>{{ book.Book_name }}</h5>
@@ -150,9 +150,9 @@
         <div class="search-card">
           <a href="{% url 'product' book.id %}">
             {% if book.imageURL and "herald" not in book.imageURL|lower and "college" not in book.imageURL|lower %}
-            <img src="{{ book.imageURL }}" alt="{{ book.Book_name }}">
+            <img class="book-cover-img" src="{{ book.imageURL }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
             {% else %}
-            <img src="{% static 'images/default-book.jpg' %}" alt="{{ book.Book_name }}">
+            <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
             {% endif %}
           </a>
           <div class="search-card-body">
