@@ -13,12 +13,11 @@
   <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
       <div class="card shadow-lg border-0 rounded-4">
-        <div class="card-header bg-success text-white text-center py-4 rounded-top-4">
-          <h2>List a Book for Swap</h2>
-          <p class="mb-0">Find the perfect exchange partner</p>
+        <div class="card-header bg-success text-white text-center py-3 rounded-top-4">
+          <h3 class="mb-0">List a Book for Swap</h3>
         </div>
 
-        <div class="card-body p-5">
+        <div class="card-body p-4">
           {% if messages %}
             {% for message in messages %}
               <div class="alert alert-{{ message.tags }} mb-3" role="alert">
@@ -26,6 +25,18 @@
               </div>
             {% endfor %}
           {% endif %}
+
+          <div class="alert alert-light border mb-4" role="alert">
+            Listing as:
+            <strong>
+              {% if request.user.get_full_name %}
+                {{ request.user.get_full_name }}
+              {% else %}
+                {{ request.user.username }}
+              {% endif %}
+            </strong>
+            <div class="text-muted" style="font-size: 13px;">Owner is saved automatically for security.</div>
+          </div>
 
           {% if form.non_field_errors %}
             <div class="alert alert-danger mb-3" role="alert">
@@ -55,10 +66,7 @@
               </div>
             {% endfor %}
 
-            <div class="d-flex justify-content-end gap-3 mt-4">
-              <a href="{% url 'swap_matches' %}" class="btn btn-outline-secondary">Cancel</a>
-              <button type="submit" class="btn btn-success px-4 py-2">Submit Swap Listing</button>
-            </div>
+            <button type="submit" class="btn btn-success w-100 mt-3">Submit Swap Listing</button>
           </form>
         </div>
       </div>

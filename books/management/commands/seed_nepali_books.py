@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 import re
+from io import BytesIO
 
 import requests
 from cloudinary.uploader import upload as cloudinary_upload
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
+from PIL import Image
 
 from books.models import Product
 
@@ -20,6 +23,7 @@ class NepaliSeedBook:
     genre: str
     price: int
     description: str
+    cover_source: str | None = None
 
 
 class Command(BaseCommand):
@@ -78,24 +82,19 @@ class Command(BaseCommand):
                 # 3) Validate the URL is reachable.
                 # 4) Upload to Cloudinary and store the returned public_id.
                 try:
-                    cover_url = self._best_openlibrary_cover_url(
+                    image_bytes = self._resolve_cover_bytes(
                         session=session,
+                        source=book.cover_source,
                         title=book.title,
                         author=book.author,
                     )
-                    if not cover_url:
+                    if not image_bytes:
                         continue
 
-                    try:
-                        resp = session.get(cover_url, timeout=10)
-                        resp.raise_for_status()
-                    except Exception:
+                    if not self._image_is_usable(image_bytes, min_dim=240):
                         continue
 
-                    upload_result = cloudinary_upload(
-                        cover_url,
-                        folder="bookloop_covers",
-                    )
+                    upload_result = cloudinary_upload(BytesIO(image_bytes), folder="bookloop_covers")
                     public_id = upload_result.get("public_id") if isinstance(upload_result, dict) else None
                     if public_id:
                         Product.objects.filter(pk=product.pk).update(image=public_id)
@@ -111,6 +110,10 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(f"Cover uploads failed (non-fatal): {covers_failed}"))
 
     def _curated_books(self) -> list[NepaliSeedBook]:
+        # Prefer explicit, verified covers when you have them.
+        # `cover_source` supports:
+        # - A local path (relative to project root), e.g. "static/images/karnali_blues.jpg"
+        # - A direct URL to a high-res image
         return [
             NepaliSeedBook(
                 title="Palpasa Cafe",
@@ -122,6 +125,7 @@ class Command(BaseCommand):
                     "friendship, and the emotional weight of Nepal's conflict years. Written with warmth and "
                     "quiet political undertones, it captures the pulse of a changing Kathmandu." 
                 ),
+                cover_source="static/images/pc.jpg",
             ),
             NepaliSeedBook(
                 title="Karnali Blues",
@@ -133,6 +137,7 @@ class Command(BaseCommand):
                     "their life shaped by hardship and hope. It paints rural Nepal with intimate detail, "
                     "balancing nostalgia, grief, and resilience." 
                 ),
+                cover_source="static/images/karnali_blues.jpg",
             ),
             NepaliSeedBook(
                 title="Seto Dharti",
@@ -144,6 +149,7 @@ class Command(BaseCommand):
                     "a voice that is both painful and honest. The novel explores widowhood, tradition, and "
                     "the quiet endurance of women across decades." 
                 ),
+                cover_source="static/images/SD.jpg",
             ),
             NepaliSeedBook(
                 title="Shirishko Phool (The Blue Mimosa)",
@@ -155,6 +161,7 @@ class Command(BaseCommand):
                     "a sharp psychological lens. With striking prose and moral ambiguity, it remains one of "
                     "the most influential works in Nepali literature." 
                 ),
+                cover_source="static/images/Shirishko_Phool.jpg",
             ),
             NepaliSeedBook(
                 title="Muna Madan",
@@ -209,6 +216,7 @@ class Command(BaseCommand):
                     "emotional complexity. It blends myth and modern sensibility to explore devotion, desire, "
                     "and selfhood." 
                 ),
+                cover_source="static/images/RD.jpg",
             ),
             NepaliSeedBook(
                 title="Basain",
@@ -331,6 +339,42 @@ class Command(BaseCommand):
             ),
         ]
 
+    def _resolve_cover_bytes(
+        self,
+        *,
+        session: requests.Session,
+        source: str | None,
+        title: str,
+        author: str,
+    ) -> bytes | None:
+        """Resolve cover image bytes from an explicit source or Open Library."""
+
+        if source:
+            source = source.strip()
+            if source.startswith("http://") or source.startswith("https://"):
+                return self._download_image_bytes(session, source)
+
+            local_path = (Path.cwd() / source).resolve()
+            if local_path.exists() and local_path.is_file():
+                return local_path.read_bytes()
+
+        cover_url = self._best_openlibrary_cover_url(session=session, title=title, author=author)
+        if not cover_url:
+            return None
+        return self._download_image_bytes(session, cover_url)
+
+    def _download_image_bytes(self, session: requests.Session, url: str) -> bytes | None:
+        try:
+            resp = session.get(url, timeout=5)
+            resp.raise_for_status()
+        except Exception:
+            return None
+
+        content_type = (resp.headers.get("Content-Type") or "").lower()
+        if content_type and not content_type.startswith("image/"):
+            return None
+        return resp.content
+
     def _best_openlibrary_cover_url(self, session: requests.Session, title: str, author: str) -> str | None:
         """Find the best available Open Library cover URL (large) for a book."""
 
@@ -356,7 +400,7 @@ class Command(BaseCommand):
                 resp = session.get(
                     "https://openlibrary.org/search.json",
                     params=params,
-                    timeout=10,
+                    timeout=5,
                 )
                 resp.raise_for_status()
                 data = resp.json() or {}
@@ -374,6 +418,18 @@ class Command(BaseCommand):
                     return f"https://covers.openlibrary.org/b/olid/{cover_edition_key}-L.jpg"
 
         return None
+
+    def _image_is_usable(self, image_bytes: bytes, *, min_dim: int) -> bool:
+        if not image_bytes:
+            return False
+
+        try:
+            with Image.open(BytesIO(image_bytes)) as img:
+                width, height = img.size
+        except Exception:
+            return False
+
+        return min(width, height) >= int(min_dim)
 
     def _normalize_title(self, title: str) -> str:
         """Normalize titles for better Open Library search matching."""

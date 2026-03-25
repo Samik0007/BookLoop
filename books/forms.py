@@ -27,7 +27,7 @@ class SwapBookForm(forms.ModelForm):
         ),
         widget=forms.Select(
             attrs={
-                "class": "form-select",
+                "class": "form-select mb-3",
             }
         ),
     )
@@ -37,6 +37,7 @@ class SwapBookForm(forms.ModelForm):
         # Note: Book_name is the title field on Product.
         fields = [
             "Book_name",
+            "Author",
             "condition",
             "location",
             "contact_email",
@@ -46,6 +47,7 @@ class SwapBookForm(forms.ModelForm):
         ]
         labels = {
             "Book_name": "Book Name",
+            "Author": "Author",
             "condition": "Book Condition",
             "location": "Location",
             "contact_email": "Contact Email",
@@ -56,38 +58,44 @@ class SwapBookForm(forms.ModelForm):
         widgets = {
             "Book_name": forms.TextInput(
                 attrs={
-                    "class": "form-control",
+                    "class": "form-control mb-3",
                     "placeholder": "e.g. The Hobbit",
+                }
+            ),
+            "Author": forms.TextInput(
+                attrs={
+                    "class": "form-control mb-3",
+                    "placeholder": "e.g. J.R.R. Tolkien",
                 }
             ),
             "location": forms.TextInput(
                 attrs={
-                    "class": "form-control",
+                    "class": "form-control mb-3",
                     "placeholder": "e.g. Kathmandu, Baneshwor",
                 }
             ),
             "contact_email": forms.EmailInput(
                 attrs={
-                    "class": "form-control",
+                    "class": "form-control mb-3",
                     "placeholder": "you@example.com",
                 }
             ),
             "image": forms.ClearableFileInput(
                 attrs={
-                    "class": "form-control",
+                    "class": "form-control mb-3",
                     "placeholder": "Upload book cover",
                 }
             ),
             "description": forms.Textarea(
                 attrs={
-                    "class": "form-control",
+                    "class": "form-control mb-3",
                     "rows": 3,
                     "placeholder": "Add short details about this copy.",
                 }
             ),
             "swap_preference": forms.Textarea(
                 attrs={
-                    "class": "form-control",
+                    "class": "form-control mb-3",
                     "rows": 3,
                     "placeholder": "Books/genres you want in exchange",
                 }

@@ -20,9 +20,9 @@
             <div class="store-badge"><i class="fas fa-percentage"></i> 10% OFF</div>
             <a href="{% url 'product' product.id %}">
               {% if product.image %}
-              <img src="{{ product.image.url }}" alt="{{ product.Book_name }}">
+              <img class="book-cover-img" src="{{ product.image.url }}" alt="{{ product.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
               {% else %}
-              <img src="{% static 'images/default-cover.jpg' %}" alt="Cover not available">
+              <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ product.Book_name }}">
               {% endif %}
             </a>
           </div>

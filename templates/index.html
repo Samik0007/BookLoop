@@ -504,8 +504,11 @@ h1, h2, h3 {
             <div class="book-body">
                 <span class="badge bg-info text-dark mb-2">🔄 Available for Swap</span>
                 <h5>{{ book.Book_name|truncatewords:5 }}</h5>
-                <p>Owner: {{ book.seller.username|default:"BookLoop User" }}</p>
-                <small class="text-muted">Looking for: {{ book.swap_preference|default:"Open to offers"|truncatechars:30 }}</small>
+                <p style="margin: 0;">Author: {{ book.Author|default:"Unknown"|truncatewords:4 }}</p>
+                <p style="margin: 0;">Owner: {{ book.seller.username|default:"BookLoop User" }}</p>
+                <p style="margin: 0;">Location: {{ book.location|default:"Not specified"|truncatechars:24 }}</p>
+                <small class="text-muted d-block">Condition: {{ book.condition|default:"Not specified"|truncatechars:22 }}</small>
+                <small class="text-muted d-block">Looking for: {{ book.swap_preference|default:"Open to offers"|truncatechars:30 }}</small>
             </div>
             <div class="book-actions">
                 <a href="{% url 'product' book.id %}"><i class="fas fa-arrow-right"></i> View</a>

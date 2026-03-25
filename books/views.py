@@ -5,12 +5,13 @@ from django.contrib import messages
 from django.db.models import Q, Case, When, IntegerField, Value
 from django.views.generic import ListView
 from django.views.generic.edit import CreateView
+from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 import json
 import datetime
 
-from .models import Product, Order, OrderItem, Wishlist, ShippingAddress
+from .models import Product, Rating, Order, OrderItem, Wishlist, ShippingAddress
 from .recommendation_engine import get_recommendations_for_user, get_similar_books
 from recommendations.services import get_user_recommendations
 from .user_interaction import (
@@ -234,12 +235,18 @@ def prod_detail(request, id):
         return redirect('store')
     cartItems = 0
     similar_books = []
+    user_rating = None
 
     if request.user.is_authenticated:
         order, _ = Order.objects.get_or_create(
             user=request.user.username, complete=False
         )
         cartItems = order.get_cart_items
+
+        existing = Rating.objects.filter(user=request.user, book=product).values_list(
+            "score", flat=True
+        ).first()
+        user_rating = int(existing) if existing is not None else None
         
         # Track product view for recommendations
         session_id = request.session.session_key
@@ -251,8 +258,39 @@ def prod_detail(request, id):
     return render(request, 'productdetails.html', {
         'data': product,
         'cartItems': cartItems,
-        'similar_books': similar_books
+        'similar_books': similar_books,
+        'user_rating': user_rating,
     })
+
+
+class RateBookView(LoginRequiredMixin, View):
+    """Create or update the current user's rating for a book (1-5).
+
+    Uses update-or-create; cached aggregates are refreshed by the Rating model.
+    """
+
+    def post(self, request, book_id):
+        book = get_object_or_404(Product, id=book_id)
+        raw_score = request.POST.get("score")
+
+        try:
+            score = int(raw_score)
+        except (TypeError, ValueError):
+            messages.error(request, "Please select a rating from 1 to 5.")
+            return redirect("product", id=book.id)
+
+        if score < 1 or score > 5:
+            messages.error(request, "Please select a rating from 1 to 5.")
+            return redirect("product", id=book.id)
+
+        Rating.objects.update_or_create(
+            user=request.user,
+            book=book,
+            defaults={"score": score},
+        )
+
+        messages.success(request, "Thanks! Your rating has been saved.")
+        return redirect("product", id=book.id)
 
 
 # -------------------------

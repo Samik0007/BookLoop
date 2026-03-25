@@ -81,8 +81,20 @@ body {
 
 .product-image img {
   width: 100%;
-  height: 460px;
-  object-fit: cover;
+}
+
+.bw-main-cover {
+  width: 100%;
+  max-height: 600px;
+  object-fit: contain;
+  object-position: center;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 1rem;
+}
+
+.bw-main-cover--swap {
+  max-height: 500px;
 }
 
 .product-content {
@@ -361,8 +373,9 @@ body {
 
 .similar-card img {
   width: 100%;
-  height: 230px;
+  height: 280px;
   object-fit: cover;
+  object-position: center;
 }
 
 .similar-body {
@@ -409,7 +422,7 @@ body {
 
 @media (max-width: 991px) {
   .product-image img {
-    height: 360px;
+    max-height: 520px;
   }
 
   .product-highlight-bar,
@@ -428,6 +441,32 @@ body {
     font-size: 28px;
   }
 }
+
+.star-rating {
+  display: inline-flex;
+  flex-direction: row-reverse;
+  gap: 6px;
+}
+
+.star-rating input {
+  display: none;
+}
+
+.star-rating label {
+  cursor: pointer;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--bs-gray-400);
+}
+
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+  color: var(--bs-warning);
+}
+
+.star-rating input:checked ~ label {
+  color: var(--bs-warning);
+}
 </style>
 
 {% if data %}
@@ -444,9 +483,9 @@ body {
               </div>
               <div class="product-image">
                 {% if data.imageURL and "herald" not in data.imageURL|lower and "college" not in data.imageURL|lower %}
-                <img src="{{ data.imageURL }}" alt="{{ data.Book_name }}">
+                <img src="{{ data.imageURL }}" alt="{{ data.Book_name }}" class="img-fluid shadow-sm bw-main-cover {% if data.listing_type == 'swap' %}bw-main-cover--swap{% endif %}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
                 {% else %}
-                <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ data.Book_name }}">
+                <img src="{% static 'images/default_cover.jpg' %}" alt="{{ data.Book_name }}" class="img-fluid shadow-sm bw-main-cover {% if data.listing_type == 'swap' %}bw-main-cover--swap{% endif %}">
                 {% endif %}
               </div>
             </div>
@@ -468,90 +507,184 @@ body {
 
               <p class="product-description">{{ data.description }}</p>
 
-              <div class="product-highlight-bar">
-                <div class="product-highlight">
-                  <small>Delivery</small>
-                  <strong>2-4 business days</strong>
-                </div>
-                <div class="product-highlight">
-                  <small>Checkout</small>
-                  <strong>Fast & secure</strong>
-                </div>
-              </div>
+              {% if data.listing_type == 'sell' %}
+                <div style="margin: 10px 0 14px;">
+                  {% if data.rating_count %}
+                    <p class="text-muted" style="margin: 0 0 8px;">
+                      <i class="fas fa-star text-warning"></i>
+                      {{ data.average_rating|floatformat:1 }} / 5 (Based on {{ data.rating_count }} reviews)
+                    </p>
+                  {% else %}
+                    <p class="text-muted" style="margin: 0 0 8px;">
+                      <i class="fas fa-star text-warning"></i>
+                      No ratings yet
+                    </p>
+                  {% endif %}
 
-              <div class="product-price-panel">
-                <div>
-                  <div class="product-price-label">Special price</div>
-                  <div class="product-price">Rs. {{ data.price }}</div>
+                  {% if user.is_authenticated %}
+                    <form method="POST" action="{% url 'rate_book' data.id %}">
+                      {% csrf_token %}
+                      <div class="star-rating" aria-label="Rate this book">
+                        <input type="radio" id="rating-5" name="score" value="5" {% if user_rating == 5 %}checked{% endif %}>
+                        <label for="rating-5" title="5 stars">★</label>
+                        <input type="radio" id="rating-4" name="score" value="4" {% if user_rating == 4 %}checked{% endif %}>
+                        <label for="rating-4" title="4 stars">★</label>
+                        <input type="radio" id="rating-3" name="score" value="3" {% if user_rating == 3 %}checked{% endif %}>
+                        <label for="rating-3" title="3 stars">★</label>
+                        <input type="radio" id="rating-2" name="score" value="2" {% if user_rating == 2 %}checked{% endif %}>
+                        <label for="rating-2" title="2 stars">★</label>
+                        <input type="radio" id="rating-1" name="score" value="1" {% if user_rating == 1 %}checked{% endif %}>
+                        <label for="rating-1" title="1 star">★</label>
+                      </div>
+                      <div>
+                        <button type="submit" class="btn btn-outline-primary btn-sm" style="margin-top: 10px; border-radius: 14px;">
+                          Submit Rating
+                        </button>
+                      </div>
+                    </form>
+                  {% else %}
+                    <p class="text-muted" style="margin: 0;">Login to rate this book.</p>
+                  {% endif %}
                 </div>
-                {% if data.quantity == 0 %}
-                  <span class="product-stock stock-empty">
-                    <i class="fas fa-times-circle"></i>
-                    Out of stock
-                  </span>
-                {% else %}
-                  <span class="product-stock stock-available">
-                    <i class="fas fa-check-circle"></i>
-                    {{ data.quantity }} in stock
-                  </span>
-                {% endif %}
-              </div>
 
-              <div id="cart-msg"></div>
+                <div class="product-highlight-bar">
+                  <div class="product-highlight">
+                    <small>Delivery</small>
+                    <strong>2-4 business days</strong>
+                  </div>
+                  <div class="product-highlight">
+                    <small>Checkout</small>
+                    <strong>Fast & secure</strong>
+                  </div>
+                </div>
 
-              <div class="product-actions">
-                <button data-product="{{ data.id }}" data-action="add" class="btn btn-cart update-cart">
-                  <i class="fas fa-cart-plus"></i>
-                  Add to Cart
-                </button>
-                <button class="btn btn-buy btn-buy-now" type="button" data-product="{{ data.id }}">
-                  <i class="fas fa-bolt"></i>
-                  Buy Now
-                </button>
-                <button class="btn btn-wish addToWishlist" data-product="{{ data.id }}">
-                  <i class="fas fa-heart"></i>
-                  Save to Wishlist
-                </button>
-              </div>
+                <div class="product-price-panel">
+                  <div>
+                    <div class="product-price-label">Special price</div>
+                    <div class="product-price">Rs. {{ data.price }}</div>
+                  </div>
+                  {% if data.quantity == 0 %}
+                    <span class="product-stock stock-empty">
+                      <i class="fas fa-times-circle"></i>
+                      Out of stock
+                    </span>
+                  {% else %}
+                    <span class="product-stock stock-available">
+                      <i class="fas fa-check-circle"></i>
+                      {{ data.quantity }} in stock
+                    </span>
+                  {% endif %}
+                </div>
+
+                <div id="cart-msg"></div>
+
+                <div class="product-actions">
+                  <button data-product="{{ data.id }}" data-action="add" class="btn btn-cart update-cart">
+                    <i class="fas fa-cart-plus"></i>
+                    Add to Cart
+                  </button>
+                  <button class="btn btn-buy btn-buy-now" type="button" data-product="{{ data.id }}">
+                    <i class="fas fa-bolt"></i>
+                    Buy Now
+                  </button>
+                  <button class="btn btn-wish addToWishlist" data-product="{{ data.id }}">
+                    <i class="fas fa-heart"></i>
+                    Save to Wishlist
+                  </button>
+                </div>
+              {% elif data.listing_type == 'swap' %}
+                <div class="product-price-panel" style="gap: 12px;">
+                  <div style="width: 100%;">
+                    <div class="product-price-label">Swap Details</div>
+
+                    <div style="display: grid; gap: 10px; margin-top: 10px;">
+                      <div class="product-highlight" style="margin: 0;">
+                        <small>Owner</small>
+                        <strong>
+                          {% if data.seller %}
+                            {% if data.seller.get_full_name %}
+                              {{ data.seller.get_full_name }}
+                            {% else %}
+                              {{ data.seller.username }}
+                            {% endif %}
+                          {% else %}
+                            BookLoop User
+                          {% endif %}
+                        </strong>
+                      </div>
+
+                      <div class="product-highlight" style="margin: 0;">
+                        <small>Location</small>
+                        <strong>{{ data.location|default:"Not specified" }}</strong>
+                      </div>
+
+                      <div class="product-highlight" style="margin: 0;">
+                        <small>Condition</small>
+                        <strong>{{ data.condition|default:"Not specified" }}</strong>
+                      </div>
+
+                      <div class="product-highlight" style="margin: 0;">
+                        <small>Looking For</small>
+                        <strong>{{ data.swap_preference|default:"Open to offers" }}</strong>
+                      </div>
+                    </div>
+
+                    {% with email=data.contact_email|default:data.seller.email %}
+                      {% if email %}
+                        <a href="mailto:{{ email }}?subject=Swap Request: {{ data.Book_name }} via BookLoop" class="btn btn-primary btn-lg w-100" style="margin-top: 16px; border-radius: 18px;">
+                          <i class="fas fa-envelope"></i>
+                          Contact Owner to Swap
+                        </a>
+                      {% else %}
+                        <div class="alert alert-warning" style="margin-top: 16px; border-radius: 18px;">
+                          Contact email is not available for this swap listing.
+                        </div>
+                      {% endif %}
+                    {% endwith %}
+                  </div>
+                </div>
+              {% endif %}
             </div>
           </div>
 
           <div class="col-lg-3">
-            <div class="product-side">
-              <h5>Why you'll love it</h5>
+            {% if data.listing_type == 'sell' %}
+              <div class="product-side">
+                <h5>Why you'll love it</h5>
 
-              <div class="side-feature">
-                <i class="fas fa-undo-alt"></i>
-                <div>
-                  <strong>Easy returns</strong>
-                  <span>Return or replace within 7 days for a smoother shopping experience.</span>
+                <div class="side-feature">
+                  <i class="fas fa-undo-alt"></i>
+                  <div>
+                    <strong>Easy returns</strong>
+                    <span>Return or replace within 7 days for a smoother shopping experience.</span>
+                  </div>
+                </div>
+
+                <div class="side-feature">
+                  <i class="fas fa-shield-alt"></i>
+                  <div>
+                    <strong>Protected purchase</strong>
+                    <span>Secure checkout flow built for safe payments and trusted ordering.</span>
+                  </div>
+                </div>
+
+                <div class="side-feature">
+                  <i class="fas fa-magic"></i>
+                  <div>
+                    <strong>Smart recommendations</strong>
+                    <span>Discover similar titles based on genre, author, and reading behavior.</span>
+                  </div>
+                </div>
+
+                <div class="side-feature">
+                  <i class="fas fa-gift"></i>
+                  <div>
+                    <strong>Perfect for gifting</strong>
+                    <span>A stylish choice for readers, collectors, and thoughtful presents.</span>
+                  </div>
                 </div>
               </div>
-
-              <div class="side-feature">
-                <i class="fas fa-shield-alt"></i>
-                <div>
-                  <strong>Protected purchase</strong>
-                  <span>Secure checkout flow built for safe payments and trusted ordering.</span>
-                </div>
-              </div>
-
-              <div class="side-feature">
-                <i class="fas fa-magic"></i>
-                <div>
-                  <strong>Smart recommendations</strong>
-                  <span>Discover similar titles based on genre, author, and reading behavior.</span>
-                </div>
-              </div>
-
-              <div class="side-feature">
-                <i class="fas fa-gift"></i>
-                <div>
-                  <strong>Perfect for gifting</strong>
-                  <span>A stylish choice for readers, collectors, and thoughtful presents.</span>
-                </div>
-              </div>
-            </div>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -562,14 +695,14 @@ body {
           <p>Similar books selected from your current interest in author and genre.</p>
         </div>
 
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 justify-content-start similar-grid">
+        <div class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-4 justify-content-start similar-grid">
           {% for book in similar_books %}
           <div class="col">
             <div class="similar-card h-100">
               {% if book.image and "herald" not in book.image.url|lower and "college" not in book.image.url|lower %}
-                <img class="book-cover-img" src="{{ book.image.url }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
+                <img class="card-img-top book-cover-img" src="{{ book.image.url }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;" style="width: 100%; height: 280px; object-fit: cover; object-position: center; border-radius: inherit;">
               {% else %}
-                <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
+                <img class="card-img-top book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}" style="width: 100%; height: 280px; object-fit: cover; object-position: center; border-radius: inherit;">
               {% endif %}
               <div class="similar-body">
                 <h6>{{ book.Book_name|truncatewords:4 }}</h6>

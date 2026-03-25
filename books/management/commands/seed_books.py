@@ -1,10 +1,12 @@
 import random
 from datetime import datetime
 import re
+from io import BytesIO
 
 import requests
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+from PIL import Image
 
 from books.models import Product
 from cloudinary.uploader import upload as cloudinary_upload
@@ -60,7 +62,7 @@ class Command(BaseCommand):
                 response = session.get(
                     "https://www.googleapis.com/books/v1/volumes",
                     params=params,
-                    timeout=10,
+                    timeout=5,
                 )
                 response.raise_for_status()
             except Exception as exc:  # noqa: BLE001
@@ -122,20 +124,18 @@ class Command(BaseCommand):
                 # Try to upload cover image to Cloudinary
                 image_public_id = None
                 image_links = volume_info.get("imageLinks") or {}
-                image_url = (
-                    image_links.get("thumbnail")
-                    or image_links.get("smallThumbnail")
-                    or None
-                )
-                if image_url:
+                image_url = self._pick_best_google_image_url(image_links)
+                if image_url and not self._looks_like_placeholder_url(image_url):
                     try:
                         image_url = self._to_high_res_google_books_url(image_url)
-                        upload_result = cloudinary_upload(
-                            image_url,
-                            folder="bookloop_covers",
-                        )
-                        if isinstance(upload_result, dict):
-                            image_public_id = upload_result.get("public_id")
+                        image_bytes = self._download_image_bytes(session, image_url)
+                        if image_bytes and self._image_is_usable(image_bytes, min_dim=220):
+                            upload_result = cloudinary_upload(
+                                BytesIO(image_bytes),
+                                folder="bookloop_covers",
+                            )
+                            if isinstance(upload_result, dict):
+                                image_public_id = upload_result.get("public_id")
                     except Exception:  # noqa: BLE001
                         # Fail silently; Product.save() can still auto-fetch
                         image_public_id = None
@@ -214,3 +214,48 @@ class Command(BaseCommand):
         # Remove curl effect which can degrade perceived sharpness
         url = url.replace("&edge=curl", "").replace("edge=curl&", "")
         return url
+
+    def _pick_best_google_image_url(self, image_links: dict) -> str | None:
+        """Pick the highest-quality image URL Google Books provides."""
+
+        if not isinstance(image_links, dict):
+            return None
+
+        for key in ("extraLarge", "large", "medium", "thumbnail", "smallThumbnail"):
+            url = (image_links.get(key) or "").strip()
+            if url:
+                return url
+        return None
+
+    def _looks_like_placeholder_url(self, url: str) -> bool:
+        """Heuristic filter for known placeholder/no-photo style URLs."""
+
+        lowered = (url or "").lower()
+        return any(token in lowered for token in ("nophoto", "no_photo", "placeholder", "noimage", "no_image", "default"))
+
+    def _download_image_bytes(self, session: requests.Session, url: str) -> bytes | None:
+        """Download image bytes once so we can validate resolution before uploading."""
+
+        if not url:
+            return None
+
+        resp = session.get(url, timeout=5)
+        resp.raise_for_status()
+        content_type = (resp.headers.get("Content-Type") or "").lower()
+        if content_type and not content_type.startswith("image/"):
+            return None
+        return resp.content
+
+    def _image_is_usable(self, image_bytes: bytes, *, min_dim: int) -> bool:
+        """Reject tiny thumbnails that will look blurry when scaled up."""
+
+        if not image_bytes:
+            return False
+
+        try:
+            with Image.open(BytesIO(image_bytes)) as img:
+                width, height = img.size
+        except Exception:  # noqa: BLE001
+            return False
+
+        return min(width, height) >= int(min_dim)

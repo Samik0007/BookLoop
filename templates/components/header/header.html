@@ -174,7 +174,7 @@
           <a class="bw-icon-btn" href="{% url 'cart' %}">
             <i class="fa fa-shopping-bag"></i>
             <span>Cart</span>
-            <span class="bw-badge">{{ cartItems }}</span>
+            <span class="bw-badge">{{ cart_count }}</span>
           </a>
           <a class="bw-icon-btn" href="{% url 'order' %}">
             <i class="fa fa-clipboard"></i>
@@ -207,5 +207,16 @@
     </div>
   </div>
 </nav>
+
+<div class="container mt-3">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
 
 <!-- //header -->

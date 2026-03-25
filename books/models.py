@@ -1,11 +1,63 @@
 from django.db import models
+from django.db.models import Avg, Count
 from django.utils import timezone
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
+from typing import Optional
 
 from decimal import Decimal
 import requests
 from cloudinary.models import CloudinaryField
 from cloudinary.uploader import upload as cloudinary_upload
+
+
+def _looks_like_placeholder_url(url: str) -> bool:
+    lowered = (url or "").lower()
+    return any(
+        token in lowered
+        for token in (
+            "nophoto",
+            "no_photo",
+            "placeholder",
+            "noimage",
+            "no_image",
+            "default",
+        )
+    )
+
+
+def _normalize_google_books_image_url(url: str) -> str:
+    """Force higher-res Google Books thumbnails.
+
+    Google Books often returns tiny images with `zoom=1` (or other values).
+    `zoom=0` typically yields the highest resolution available for the same ID.
+    """
+
+    if not url:
+        return url
+
+    url = url.replace("http://", "https://")
+    # Normalize zoom if present
+    if "zoom=" in url:
+        # keep it simple and explicit as requested
+        url = url.replace("zoom=1", "zoom=0").replace("zoom=5", "zoom=0")
+    else:
+        joiner = "&" if "?" in url else "?"
+        url = f"{url}{joiner}zoom=0"
+
+    # Remove curled edge effect when present
+    url = url.replace("&edge=curl", "").replace("edge=curl&", "")
+    return url
+
+
+def _pick_best_google_image_link(image_links: dict) -> str | None:
+    if not isinstance(image_links, dict):
+        return None
+    for key in ("extraLarge", "large", "medium", "thumbnail", "smallThumbnail"):
+        val = (image_links.get(key) or "").strip()
+        if val:
+            return val
+    return None
 
 # -------------------------
 # CHOICES
@@ -100,6 +152,10 @@ class Product(models.Model):
     # Total number of times this product has been viewed
     views = models.PositiveIntegerField(default=0)
 
+    # Cached aggregation for lightning-fast card/detail rendering
+    average_rating = models.FloatField(default=0.0)
+    rating_count = models.PositiveIntegerField(default=0)
+
     def __str__(self):
         return self.Book_name
 
@@ -117,44 +173,125 @@ class Product(models.Model):
         """
 
         update_fields = kwargs.get("update_fields")
-        # Skip auto-fetch if this save explicitly targets the image field
-        # (e.g. during a bulk cleanup command).
-        skip_auto_fetch = update_fields is not None and "image" in update_fields
+        # Skip auto-fetch when the caller is explicitly updating the image field
+        # (e.g. purge/cleanup/backfill tools) OR when doing partial updates that
+        # are unrelated to cover metadata (e.g. cached rating aggregates).
+        if update_fields is not None:
+            skip_auto_fetch = ("image" in update_fields) or not any(
+                field in update_fields for field in ("Book_name", "Author")
+            )
+        else:
+            skip_auto_fetch = False
 
         if not skip_auto_fetch and not self.image:
             try:
                 title = (self.Book_name or "").strip()
+                author = (self.Author or "").strip()
                 if title:
-                    response = requests.get(
-                        "https://openlibrary.org/search.json",
-                        params={"title": title},
-                        timeout=5,
-                    )
-                    response.raise_for_status()
-                    data = response.json() or {}
-                    docs = data.get("docs") or []
-
+                    # 1) Open Library (prefer LARGE covers: -L.jpg)
                     cover_id = None
-                    for doc in docs:
-                        cover_i = doc.get("cover_i")
-                        if cover_i:
-                            cover_id = cover_i
+                    query_attempts: list[dict[str, str]] = []
+                    if author:
+                        query_attempts.append({"title": title, "author": author})
+                    query_attempts.append({"title": title})
+
+                    for params in query_attempts:
+                        response = requests.get(
+                            "https://openlibrary.org/search.json",
+                            params=params,
+                            timeout=5,
+                        )
+                        response.raise_for_status()
+                        data = response.json() or {}
+                        docs = data.get("docs") or []
+
+                        for doc in docs:
+                            cover_i = doc.get("cover_i")
+                            if cover_i:
+                                cover_id = cover_i
+                                break
+                        if cover_id:
                             break
 
                     if cover_id:
                         image_url = f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg"
-                        upload_result = cloudinary_upload(
-                            image_url,
-                            folder="bookloop_covers",
+                        if not _looks_like_placeholder_url(image_url):
+                            upload_result = cloudinary_upload(image_url, folder="bookloop_covers")
+                            public_id = (
+                                upload_result.get("public_id")
+                                if isinstance(upload_result, dict)
+                                else None
+                            )
+                            if public_id:
+                                self.image = public_id
+
+                    # 2) Google Books fallback (high-res enforcement)
+                    if not self.image:
+                        q_parts = [f"intitle:{title}"]
+                        if author:
+                            q_parts.append(f"inauthor:{author}")
+                        gb_params = {
+                            "q": " ".join(q_parts),
+                            "maxResults": 1,
+                            "printType": "books",
+                        }
+                        gb_resp = requests.get(
+                            "https://www.googleapis.com/books/v1/volumes",
+                            params=gb_params,
+                            timeout=5,
                         )
-                        public_id = upload_result.get("public_id") if isinstance(upload_result, dict) else None
-                        if public_id:
-                            self.image = public_id
+                        gb_resp.raise_for_status()
+                        gb_data = gb_resp.json() or {}
+                        items = gb_data.get("items") or []
+                        if items:
+                            volume_info = items[0].get("volumeInfo") or {}
+                            image_links = volume_info.get("imageLinks") or {}
+                            gb_url = _pick_best_google_image_link(image_links)
+                            gb_url = _normalize_google_books_image_url(gb_url or "")
+
+                            if gb_url and not _looks_like_placeholder_url(gb_url):
+                                upload_result = cloudinary_upload(gb_url, folder="bookloop_covers")
+                                public_id = (
+                                    upload_result.get("public_id")
+                                    if isinstance(upload_result, dict)
+                                    else None
+                                )
+                                if public_id:
+                                    self.image = public_id
             except Exception:
                 # Fail quietly – never block saving due to network/API issues.
                 pass
 
         super().save(*args, **kwargs)
+
+
+class Rating(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    book = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="ratings")
+    score = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "book")
+
+    @staticmethod
+    def _refresh_book_aggregates(book: Optional[Product]) -> None:
+        if not book:
+            return
+
+        agg = Rating.objects.filter(book=book).aggregate(avg=Avg("score"), cnt=Count("id"))
+        book.average_rating = float(agg.get("avg") or 0.0)
+        book.rating_count = int(agg.get("cnt") or 0)
+        book.save(update_fields=["average_rating", "rating_count"])
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self._refresh_book_aggregates(self.book)
+
+    def delete(self, *args, **kwargs):
+        book = self.book
+        super().delete(*args, **kwargs)
+        self._refresh_book_aggregates(book)
 
     @property
     def imageURL(self):
