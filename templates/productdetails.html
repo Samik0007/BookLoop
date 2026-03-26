@@ -643,6 +643,56 @@ body {
                     {% endwith %}
                   </div>
                 </div>
+              {% elif data.listing_type == 'donate' %}
+                <div class="product-price-panel" style="gap: 12px;">
+                  <div style="width: 100%;">
+                    <div class="product-price-label">Donation Details</div>
+
+                    <div style="display: grid; gap: 10px; margin-top: 10px;">
+                      <div class="product-highlight" style="margin: 0;">
+                        <small>Donor</small>
+                        <strong>
+                          {% if data.seller %}
+                            {% if data.seller.get_full_name %}
+                              {{ data.seller.get_full_name }}
+                            {% else %}
+                              {{ data.seller.username }}
+                            {% endif %}
+                          {% else %}
+                            BookLoop User
+                          {% endif %}
+                        </strong>
+                      </div>
+
+                      <div class="product-highlight" style="margin: 0;">
+                        <small>Location</small>
+                        <strong>{{ data.location|default:"Not specified" }}</strong>
+                      </div>
+
+                      <div class="product-highlight" style="margin: 0;">
+                        <small>Condition</small>
+                        <strong>{{ data.condition|default:"Not specified" }}</strong>
+                      </div>
+                    </div>
+
+                    {% with email=data.contact_email|default:data.seller.email %}
+                      {% if email %}
+                        <a href="mailto:{{ email }}?subject=Donation Interest: {{ data.Book_name }} via BookLoop" class="btn btn-success btn-lg w-100" style="margin-top: 16px; border-radius: 18px;">
+                          <i class="fas fa-envelope"></i>
+                          Contact Donor
+                        </a>
+                      {% else %}
+                        <div class="alert alert-warning" style="margin-top: 16px; border-radius: 18px;">
+                          Contact email is not available for this donation listing.
+                        </div>
+                      {% endif %}
+                    {% endwith %}
+
+                    <div class="alert alert-light border" style="margin-top: 14px; border-radius: 18px;">
+                      This is a free donation listing. Distribution is coordinated after admin approval.
+                    </div>
+                  </div>
+                </div>
               {% endif %}
             </div>
           </div>

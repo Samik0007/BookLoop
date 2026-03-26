@@ -15,6 +15,181 @@ class SwapBookForm(forms.ModelForm):
     relevant for student-to-student swaps.
     """
 
+    SUBJECT_CHOICES = (
+        ("", "Select subject/category"),
+        ("Computing", "Computing"),
+        ("Engineering", "Engineering"),
+        ("Management", "Management"),
+        ("Science", "Science"),
+        ("Arts", "Arts"),
+        ("Other", "Other"),
+    )
+
+    CONDITION_CHOICES = (
+        ("", "Select condition"),
+        ("Excellent", "Excellent"),
+        ("Very Good", "Very Good"),
+        ("Good", "Good"),
+        ("Fair", "Fair"),
+        ("Poor", "Poor"),
+    )
+
+    genre = forms.ChoiceField(
+        required=True,
+        choices=SUBJECT_CHOICES,
+        widget=forms.Select(
+            attrs={
+                "class": "form-select",
+            }
+        ),
+    )
+
+    condition = forms.ChoiceField(
+        required=True,
+        choices=CONDITION_CHOICES,
+        widget=forms.Select(
+            attrs={
+                "class": "form-select",
+            }
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Enforce the UX contract (some model fields are nullable, but the
+        # swap listing form should collect them reliably).
+        required_fields = {
+            "Book_name",
+            "Author",
+            "genre",
+            "condition",
+            "description",
+            "location",
+            "contact_email",
+            "swap_preference",
+        }
+        for name, field in self.fields.items():
+            if name in required_fields:
+                field.required = True
+
+        # Helper text (shown under inputs)
+        self.fields["Book_name"].help_text = "Enter the exact book title on the cover."
+        self.fields["Author"].help_text = "Who wrote the book?"
+        self.fields["genre"].help_text = "Select the subject that best matches this book."
+        self.fields["condition"].help_text = "Be honest—this helps build trust."
+        self.fields["image"].help_text = "Upload a clear photo (cover or front page)."
+        self.fields["description"].help_text = "Short details (edition, notes, missing pages, etc.)."
+        self.fields["swap_preference"].help_text = (
+            "What would you like in exchange? (books, authors, subjects, genres)"
+        )
+        self.fields["location"].help_text = "City/neighborhood where you can meet."
+        self.fields["contact_email"].help_text = "We’ll show this so interested students can reach you."
+
+        # Placeholders
+        self.fields["Book_name"].widget.attrs.setdefault("placeholder", "e.g. Data Structures and Algorithms")
+        self.fields["Author"].widget.attrs.setdefault("placeholder", "e.g. Thomas H. Cormen")
+        self.fields["location"].widget.attrs.setdefault("placeholder", "e.g. Kathmandu, Baneshwor")
+        self.fields["contact_email"].widget.attrs.setdefault("placeholder", "you@example.com")
+        self.fields["description"].widget.attrs.setdefault(
+            "placeholder", "e.g. Second edition, lightly used, some highlights."
+        )
+        self.fields["swap_preference"].widget.attrs.setdefault(
+            "placeholder", "e.g. Any Engineering/Science books, or Python/Django books."
+        )
+
+        # Bootstrap base classes
+        for name, field in self.fields.items():
+            widget = field.widget
+            existing = (widget.attrs.get("class") or "").strip()
+            base_class = "form-select" if isinstance(widget, forms.Select) else "form-control"
+            if base_class not in existing.split():
+                widget.attrs["class"] = (f"{existing} {base_class}").strip()
+
+        # Bootstrap validation classes (server-side validation feedback)
+        if self.is_bound:
+            _ = self.errors  # triggers validation once
+            for name, field in self.fields.items():
+                widget = field.widget
+                existing = (widget.attrs.get("class") or "").strip()
+                if name in self.errors:
+                    widget.attrs["class"] = f"{existing} is-invalid".strip()
+                else:
+                    widget.attrs["class"] = f"{existing} is-valid".strip()
+
+    class Meta:
+        model = Product
+        # Note: Book_name is the title field on Product.
+        fields = [
+            "Book_name",
+            "Author",
+            "genre",
+            "condition",
+            "location",
+            "contact_email",
+            "image",
+            "description",
+            "swap_preference",
+        ]
+        labels = {
+            "Book_name": "Book Title",
+            "Author": "Author",
+            "genre": "Subject/Category",
+            "condition": "Condition",
+            "location": "Location",
+            "contact_email": "Contact Email",
+            "image": "Book Image",
+            "description": "Description",
+            "swap_preference": "Books/Genres Wanted in Exchange",
+        }
+        widgets = {
+            "Book_name": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                }
+            ),
+            "Author": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                }
+            ),
+            # Note: `genre` is overridden as a ChoiceField above for a constrained dropdown.
+            "location": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                }
+            ),
+            "contact_email": forms.EmailInput(
+                attrs={
+                    "class": "form-control",
+                }
+            ),
+            "image": forms.ClearableFileInput(
+                attrs={
+                    "class": "form-control",
+                }
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 3,
+                }
+            ),
+            "swap_preference": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 3,
+                }
+            ),
+        }
+
+
+class DonateBookForm(forms.ModelForm):
+    """Form for users to donate a book.
+
+    Donation listings are always free, so price and swap fields are excluded.
+    """
+
     condition = forms.ChoiceField(
         required=False,
         choices=(
@@ -34,7 +209,6 @@ class SwapBookForm(forms.ModelForm):
 
     class Meta:
         model = Product
-        # Note: Book_name is the title field on Product.
         fields = [
             "Book_name",
             "Author",
@@ -43,29 +217,27 @@ class SwapBookForm(forms.ModelForm):
             "contact_email",
             "image",
             "description",
-            "swap_preference",
         ]
         labels = {
-            "Book_name": "Book Name",
+            "Book_name": "Book Title",
             "Author": "Author",
             "condition": "Book Condition",
-            "location": "Location",
+            "location": "Pickup Location",
             "contact_email": "Contact Email",
             "image": "Book Image",
             "description": "Description",
-            "swap_preference": "Swap Preference",
         }
         widgets = {
             "Book_name": forms.TextInput(
                 attrs={
                     "class": "form-control mb-3",
-                    "placeholder": "e.g. The Hobbit",
+                    "placeholder": "e.g. Atomic Habits",
                 }
             ),
             "Author": forms.TextInput(
                 attrs={
                     "class": "form-control mb-3",
-                    "placeholder": "e.g. J.R.R. Tolkien",
+                    "placeholder": "e.g. James Clear",
                 }
             ),
             "location": forms.TextInput(
@@ -83,21 +255,13 @@ class SwapBookForm(forms.ModelForm):
             "image": forms.ClearableFileInput(
                 attrs={
                     "class": "form-control mb-3",
-                    "placeholder": "Upload book cover",
                 }
             ),
             "description": forms.Textarea(
                 attrs={
                     "class": "form-control mb-3",
                     "rows": 3,
-                    "placeholder": "Add short details about this copy.",
-                }
-            ),
-            "swap_preference": forms.Textarea(
-                attrs={
-                    "class": "form-control mb-3",
-                    "rows": 3,
-                    "placeholder": "Books/genres you want in exchange",
+                    "placeholder": "Short details about the book (edition, notes, etc.)",
                 }
             ),
         }

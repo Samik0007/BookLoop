@@ -1,0 +1,73 @@
+{% load static %}
+{% include 'components/base/base-top.html' %}
+{% include 'components/header/header.html' %}
+
+<section class="py-5" style="background: radial-gradient(circle at 10% 0%, #f7f3eb 0%, #ffffff 40%, #eef6f3 100%);">
+  <div class="container">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+      <div>
+        <h2 class="mb-1" style="font-family: 'Merriweather', serif;">Books to be Donated</h2>
+        <p class="text-muted mb-0">A social initiative: donated books listed here are approved by admins and will be distributed to students in need.</p>
+      </div>
+      <div>
+        <a href="{% url 'add_donation' %}" class="btn btn-success shadow-sm">
+          Donate a Book Now
+        </a>
+      </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 justify-content-start mt-2">
+      {% for book in books %}
+      <div class="col">
+        <div class="card h-100 shadow-sm border-0 rounded-4">
+          <a href="{% url 'product' book.id %}" style="text-decoration: none;">
+            {% if book.imageURL %}
+              <img class="card-img-top book-cover-img" src="{{ book.imageURL }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
+            {% else %}
+              <img class="card-img-top book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
+            {% endif %}
+          </a>
+          <div class="card-body">
+            <span class="badge bg-success text-white mb-2">🎁 For Donation</span>
+            <h6 class="mb-1">{{ book.Book_name }}</h6>
+            <div class="text-muted" style="font-size: 13px;">by {{ book.Author }}</div>
+            <div class="mt-2" style="font-size: 13px;">
+              <div><strong>Location:</strong> {{ book.location|default:"Not specified" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12">
+        <div class="alert alert-light border rounded-4 p-4">
+          <h5 class="mb-1">No donation books available yet</h5>
+          <p class="mb-0 text-muted">Be the first to donate a book and help a student in need.</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+      <nav class="mt-4" aria-label="Donations pagination">
+        <ul class="pagination justify-content-center">
+          {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Previous</span></li>
+          {% endif %}
+
+          <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+
+          {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">Next</span></li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  </div>
+</section>
+
+{% include 'components/footer/footer.html' %}
+{% include 'components/base/base-bottom.html' %}

@@ -36,10 +36,20 @@ def _trending_books(limit: int = 10) -> QuerySet[Product]:
 
     ids = [row["Book_name_id"] for row in popular_ids if row["Book_name_id"] is not None]
     if ids:
-        return _order_by_id_list(Product.objects.filter(id__in=ids), ids)
+        return _order_by_id_list(
+            Product.objects.filter(
+                id__in=ids,
+                listing_type="sell",
+                listing_status="approved",
+            ),
+            ids,
+        )
 
     # Absolute cold-start: no orders at all; just show most recent products
-    return Product.objects.order_by("-pub_date")[:limit]
+    return (
+        Product.objects.filter(listing_type="sell", listing_status="approved")
+        .order_by("-pub_date")[:limit]
+    )
 
 
 def get_user_recommendations(user: User, limit: int = 10) -> QuerySet[Product]:
@@ -67,7 +77,11 @@ def get_user_recommendations(user: User, limit: int = 10) -> QuerySet[Product]:
         return _trending_books(limit=limit)
 
     if book_ids:
-        qs = Product.objects.filter(id__in=book_ids)
+        qs = Product.objects.filter(
+            id__in=book_ids,
+            listing_type="sell",
+            listing_status="approved",
+        )
         return _order_by_id_list(qs, book_ids)[:limit]
 
     # No cached recommendations: check for any historical interactions

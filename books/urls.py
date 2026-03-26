@@ -23,4 +23,6 @@ urlpatterns = [
     path('offers/discounts/', views.DiscountOffersView.as_view(), name='discount_offers'),
     path('swap/add/', views.AddSwapBookView.as_view(), name='add_swap_book'),
     path('swaps/browse/', views.BrowseSwapBooksView.as_view(), name='browse_swaps'),
+    path('donate/add/', views.AddDonationBookView.as_view(), name='add_donation'),
+    path('donations/', views.BrowseDonationsView.as_view(), name='browse_donations'),
 ]

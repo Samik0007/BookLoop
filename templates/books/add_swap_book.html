@@ -2,74 +2,202 @@
 {% include 'components/base/base-top.html' %}
 {% include 'components/header/header.html' %}
 
+<script>
+  document.title = 'List a Book for Swap | BookLoop';
+</script>
+
 <style>
-  .rounded-top-4 {
-    border-top-left-radius: 1rem !important;
-    border-top-right-radius: 1rem !important;
+  .swap-section-card {
+    border-left: 5px solid #1a6b3c;
   }
 </style>
 
 <div class="container py-5 my-5">
   <div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-      <div class="card shadow-lg border-0 rounded-4">
-        <div class="card-header bg-success text-white text-center py-3 rounded-top-4">
-          <h3 class="mb-0">List a Book for Swap</h3>
+    <div class="col-lg-10 col-xl-9">
+      <!-- Page header -->
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+          <h2 class="mb-1">List a Book for Swap</h2>
+          <div class="text-muted">Share your book with another student in Nepal.</div>
         </div>
+      </div>
 
-        <div class="card-body p-4">
-          {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-{{ message.tags }} mb-3" role="alert">
-                {{ message }}
-              </div>
-            {% endfor %}
-          {% endif %}
+      <!-- Info banner -->
+      <div class="alert alert-info border" role="alert">
+        <strong>Note:</strong> Your listing will be reviewed by an admin before going live.
+        <div class="small text-muted mt-1">Owner is saved automatically for security.</div>
+      </div>
 
-          <div class="alert alert-light border mb-4" role="alert">
-            Listing as:
-            <strong>
-              {% if request.user.get_full_name %}
-                {{ request.user.get_full_name }}
-              {% else %}
-                {{ request.user.username }}
-              {% endif %}
-            </strong>
-            <div class="text-muted" style="font-size: 13px;">Owner is saved automatically for security.</div>
-          </div>
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger" role="alert">
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
 
-          {% if form.non_field_errors %}
-            <div class="alert alert-danger mb-3" role="alert">
-              {% for error in form.non_field_errors %}
-                <div>{{ error }}</div>
-              {% endfor %}
-            </div>
-          {% endif %}
+      <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+        {% csrf_token %}
 
-          <form method="POST" enctype="multipart/form-data">
-            {% csrf_token %}
+        <!-- Section 1: Book Details -->
+        <div class="card shadow-sm border-0 swap-section-card mb-4">
+          <div class="card-body p-4">
+            <h5 class="mb-3">Book Details</h5>
 
-            {% for field in form %}
-              <div class="mb-4">
-                <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}
-                  <small class="text-muted d-block mt-1">{{ field.help_text }}</small>
-                {% endif %}
-                {% if field.errors %}
-                  <div class="text-danger mt-1">
-                    {% for error in field.errors %}
-                      <div>{{ error }}</div>
-                    {% endfor %}
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label for="{{ form.Book_name.id_for_label }}" class="form-label">
+                  {{ form.Book_name.label }}{% if form.Book_name.field.required %} <span class="text-danger">*</span>{% endif %}
+                </label>
+                {{ form.Book_name }}
+                {% if form.Book_name.help_text %}<div class="form-text">{{ form.Book_name.help_text }}</div>{% endif %}
+                {% if form.Book_name.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.Book_name.errors %}<div>{{ error }}</div>{% endfor %}
                   </div>
                 {% endif %}
               </div>
-            {% endfor %}
 
-            <button type="submit" class="btn btn-success w-100 mt-3">Submit Swap Listing</button>
-          </form>
+              <div class="col-12 col-md-6">
+                <label for="{{ form.Author.id_for_label }}" class="form-label">
+                  {{ form.Author.label }}{% if form.Author.field.required %} <span class="text-danger">*</span>{% endif %}
+                </label>
+                {{ form.Author }}
+                {% if form.Author.help_text %}<div class="form-text">{{ form.Author.help_text }}</div>{% endif %}
+                {% if form.Author.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.Author.errors %}<div>{{ error }}</div>{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label for="{{ form.genre.id_for_label }}" class="form-label">
+                  {{ form.genre.label }}{% if form.genre.field.required %} <span class="text-danger">*</span>{% endif %}
+                </label>
+                {{ form.genre }}
+                {% if form.genre.help_text %}<div class="form-text">{{ form.genre.help_text }}</div>{% endif %}
+                {% if form.genre.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.genre.errors %}<div>{{ error }}</div>{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label for="{{ form.condition.id_for_label }}" class="form-label">
+                  {{ form.condition.label }}{% if form.condition.field.required %} <span class="text-danger">*</span>{% endif %}
+                </label>
+                {{ form.condition }}
+                {% if form.condition.help_text %}<div class="form-text">{{ form.condition.help_text }}</div>{% endif %}
+                {% if form.condition.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.condition.errors %}<div>{{ error }}</div>{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+
+        <!-- Section 2: Upload & Description -->
+        <div class="card shadow-sm border-0 swap-section-card mb-4">
+          <div class="card-body p-4">
+            <h5 class="mb-3">Upload &amp; Description</h5>
+
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label for="{{ form.image.id_for_label }}" class="form-label">
+                  {{ form.image.label }}{% if form.image.field.required %} <span class="text-danger">*</span>{% endif %}
+                </label>
+                {{ form.image }}
+                {% if form.image.help_text %}<div class="form-text">{{ form.image.help_text }}</div>{% endif %}
+                {% if form.image.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.image.errors %}<div>{{ error }}</div>{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label for="{{ form.description.id_for_label }}" class="form-label">
+                  {{ form.description.label }}{% if form.description.field.required %} <span class="text-danger">*</span>{% endif %}
+                </label>
+                {{ form.description }}
+                {% if form.description.help_text %}<div class="form-text">{{ form.description.help_text }}</div>{% endif %}
+                {% if form.description.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.description.errors %}<div>{{ error }}</div>{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Swap Preferences -->
+        <div class="card shadow-sm border-0 swap-section-card mb-4">
+          <div class="card-body p-4">
+            <h5 class="mb-3">Swap Preferences</h5>
+
+            <div class="row g-3">
+              <div class="col-12">
+                <label for="{{ form.swap_preference.id_for_label }}" class="form-label">
+                  {{ form.swap_preference.label }}{% if form.swap_preference.field.required %} <span class="text-danger">*</span>{% endif %}
+                </label>
+                {{ form.swap_preference }}
+                {% if form.swap_preference.help_text %}<div class="form-text">{{ form.swap_preference.help_text }}</div>{% endif %}
+                {% if form.swap_preference.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.swap_preference.errors %}<div>{{ error }}</div>{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Contact & Location -->
+        <div class="card shadow-sm border-0 swap-section-card mb-4">
+          <div class="card-body p-4">
+            <h5 class="mb-3">Contact &amp; Location</h5>
+
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label for="{{ form.location.id_for_label }}" class="form-label">
+                  {{ form.location.label }}{% if form.location.field.required %} <span class="text-danger">*</span>{% endif %}
+                </label>
+                {{ form.location }}
+                {% if form.location.help_text %}<div class="form-text">{{ form.location.help_text }}</div>{% endif %}
+                {% if form.location.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.location.errors %}<div>{{ error }}</div>{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label for="{{ form.contact_email.id_for_label }}" class="form-label">
+                  {{ form.contact_email.label }}{% if form.contact_email.field.required %} <span class="text-danger">*</span>{% endif %}
+                </label>
+                {{ form.contact_email }}
+                {% if form.contact_email.help_text %}<div class="form-text">{{ form.contact_email.help_text }}</div>{% endif %}
+                {% if form.contact_email.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.contact_email.errors %}<div>{{ error }}</div>{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-success w-100 py-2">
+          <i class="fa fa-exchange me-2" aria-hidden="true"></i>
+          Submit Swap Listing
+        </button>
+      </form>
     </div>
   </div>
 </div>

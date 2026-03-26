@@ -18,7 +18,7 @@ from .user_interaction import (
     track_product_view, track_search, track_cart_addition, 
     track_wishlist_addition, track_purchase
 )
-from .forms import SwapBookForm
+from .forms import DonateBookForm, SwapBookForm
 
 
 def _approved_swap_books_queryset():
@@ -116,6 +116,55 @@ class BrowseSwapBooksView(ListView):
     def get_queryset(self):  # type: ignore[override]
         return _approved_swap_books_queryset()
 
+
+class AddDonationBookView(LoginRequiredMixin, CreateView):
+    """Allow authenticated users to submit a book donation.
+
+    Creates a Product with listing_type='donate' and listing_status='pending'.
+    """
+
+    model = Product
+    form_class = DonateBookForm
+    template_name = "books/add_donation.html"
+    login_url = reverse_lazy("login")
+
+    def form_valid(self, form):
+        form.instance.seller = self.request.user
+        form.instance.listing_type = "donate"
+        form.instance.listing_status = "pending"
+        form.instance.price = 0
+        if not form.instance.contact_email and self.request.user.email:
+            form.instance.contact_email = self.request.user.email
+
+        # Genre is required on Product but not part of the donation UX.
+        if not form.instance.genre:
+            form.instance.genre = "Donation"
+
+        messages.success(
+            self.request,
+            "Thank you! Your donation is pending admin approval.",
+        )
+        return super().form_valid(form)
+
+    def get_success_url(self):  # type: ignore[override]
+        return reverse_lazy("home")
+
+
+class BrowseDonationsView(ListView):
+    """Public page listing approved donation books."""
+
+    model = Product
+    template_name = "books/browse_donations.html"
+    context_object_name = "books"
+    paginate_by = 12
+
+    def get_queryset(self):  # type: ignore[override]
+        return (
+            Product.objects.select_related("seller")
+            .filter(listing_type="donate", listing_status="approved")
+            .order_by("-pub_date", "-id")
+        )
+
 # -------------------------
 # BASIC PAGES
 # -------------------------
@@ -126,8 +175,14 @@ def index_page(request):
     """
     cartItems = 0
     recommended_books = []
-    all_books = Product.objects.all().order_by('-id')
-    featured_books = Product.objects.all().order_by('-sequence', '-id')[:4]
+    all_books = (
+        Product.objects.filter(listing_type="sell", listing_status="approved")
+        .order_by("-id")
+    )
+    featured_books = (
+        Product.objects.filter(listing_type="sell", listing_status="approved")
+        .order_by("-sequence", "-id")[:4]
+    )
     nepali_books = (
         Product.objects.select_related("seller")
         .filter(
@@ -206,7 +261,7 @@ def profile(request):
 # -------------------------
 
 def store(request):
-    products = Product.objects.all()
+    products = Product.objects.filter(listing_type="sell", listing_status="approved")
     cartItems = 0
 
     if request.user.is_authenticated:

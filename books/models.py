@@ -264,6 +264,36 @@ class Product(models.Model):
 
         super().save(*args, **kwargs)
 
+    @property
+    def imageURL(self):
+        try:
+            return self.image.url
+        except Exception:
+            return ""
+
+    @property
+    def display_price(self) -> Decimal:
+        """Return the effective display price.
+
+        Donations are always shown as 0, while other listing types
+        reuse the dynamic discounted price logic.
+        """
+
+        if self.listing_type == "donate":
+            return Decimal("0.00")
+        return self.discounted_price
+
+    @property
+    def discounted_price(self) -> Decimal:
+        """Return a dynamic 10% discounted price without changing base price.
+
+        The underlying ``price`` field remains the source of truth in the
+        database. This property is safe for business logic and can be used
+        directly in templates.
+        """
+
+        return round(Decimal(self.price) * Decimal("0.90"), 2)
+
 
 class Rating(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -292,36 +322,6 @@ class Rating(models.Model):
         book = self.book
         super().delete(*args, **kwargs)
         self._refresh_book_aggregates(book)
-
-    @property
-    def imageURL(self):
-        try:
-            return self.image.url
-        except:
-            return ""
-
-    @property
-    def display_price(self) -> Decimal:
-        """Return the effective display price.
-
-        Donations are always shown as 0, while other listing types
-        reuse the dynamic discounted price logic.
-        """
-
-        if self.listing_type == "donate":
-            return Decimal("0.00")
-        return self.discounted_price
-
-    @property
-    def discounted_price(self) -> Decimal:
-        """Return a dynamic 10% discounted price without changing base price.
-
-        The underlying ``price`` field remains the source of truth in the
-        database. This property is safe for business logic and can be used
-        directly in templates.
-        """
-
-        return round(Decimal(self.price) * Decimal("0.90"), 2)
 
 
 class Order(models.Model):
