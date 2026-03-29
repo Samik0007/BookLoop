@@ -73,7 +73,6 @@ ORDER_STATUS = (
 
 METHOD = (
     ("Cash On Delivery", "Cash On Delivery"),
-    ("Khalti Pay", "Khalti Pay"),
 )
 
 LISTING_CHOICES = (

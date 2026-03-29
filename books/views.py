@@ -75,7 +75,6 @@ class AddSwapBookView(LoginRequiredMixin, CreateView):
     """
 
     model = Product
-    form_class = SwapBookForm
     template_name = "books/add_swap_book.html"
     login_url = reverse_lazy("login")
 

@@ -19,7 +19,6 @@ urlpatterns = [
     path('about/',views.about,name="about"),
     path('order/', views.orders, name='order'),
     path('delete_order/<int:order_id>/', views.delete_order, name='delete_order'),
-    path('verify_payment/', views.verify_payment, name='verify_payment'),
     path('offers/discounts/', views.DiscountOffersView.as_view(), name='discount_offers'),
     path('swap/add/', views.AddSwapBookView.as_view(), name='add_swap_book'),
     path('swaps/browse/', views.BrowseSwapBooksView.as_view(), name='browse_swaps'),

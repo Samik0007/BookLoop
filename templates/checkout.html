@@ -4,7 +4,7 @@
  {% include 'components/header/header.html' %}
  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 
- <script src="https://khalti.s3.ap-south-1.amazonaws.com/KPG/dist/2020.12.17.0.0.0/khalti-checkout.iffe.js"></script>
+<!-- Khalti script removed -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 
  <style>
@@ -105,13 +105,9 @@
 
 
         <div class="box-element hidden" id="payment-info">
-            <h4>Payment Options</h4>
-            <button id = "make-payment" class="btn btn-outline-success"><option value="Cash on Delivery">Cash On Delivery</option></button>
-            <button id = "payWithESewa" class="btn btn-outline-success"><option value="Cash on Delivery">pay with esewa</option></button>
-            <button id = "payment-button" class="btn btn-outline-success"><option value="Cash on Delivery">pay with khalti</option></button>
-           
-
-        </div> 
+            <h4>Payment Option</h4>
+            <button id="make-payment" class="btn btn-success w-100">Cash On Delivery</button>
+        </div>
     </div>
 
     <div class="col-lg-6">
@@ -151,7 +147,8 @@
     })
 
     const makePaymentBtn = document.querySelector("#make-payment");
-    makePaymentBtn.addEventListener("click", function() {
+    makePaymentBtn.addEventListener("click", function(e) {
+        e.preventDefault();
         // Show confirmation dialog box when button is clicked
         const confirmation = confirm("Are you sure you want to place this order?");
         if (confirmation) {
@@ -200,115 +197,6 @@
     }
 </script>
 
-<script>
-    var path = "https://uat.esewa.com.np/epay/main";
-    var params = {
-      amt: 0,
-      psc: 0,
-      pdc: 0,
-      txAmt: 0,
-      tAmt: 0,
-      pid: "ee2c3ca1-696b-4cc5-a6be-2c40d929d453",
-      scd: "EPAYTEST",
-      su: "http://127.0.0.1:8000/order/",
-      fu: "http://127.0.0.1:8000/order/"
-    };
-    
-    function post(path, params) {
-      var form = document.createElement("form");
-      form.setAttribute("method", "POST");
-      form.setAttribute("action", path);
-    
-      for (var key in params) {
-        var hiddenField = document.createElement("input");
-        hiddenField.setAttribute("type", "hidden");
-        hiddenField.setAttribute("name", key);
-        hiddenField.setAttribute("value", params[key]);
-        form.appendChild(hiddenField);
-      }
-    
-      document.body.appendChild(form);
-      form.submit();
-    }
-    
-    document.getElementById("payWithESewa").addEventListener("click", function() {
-      // Get the total amount from the HTML and convert it to paisa
-      var totalAmount = parseInt(document.querySelector("#totalAmount").innerText) * 1;
-    
-      // Update the params object with the new amount
-      params.amt = totalAmount;
-      params.tAmt = totalAmount;
-    
-      // Call the post() function
-      post(path, params);
-    }); 
-</script>
-<script>
-function verifyPayment(payload) {
-    $.ajax({
-      url: "{% url 'verify_payment' %}",
-      type: "POST",
-      data: payload,
-      dataType: "json",
-      success: function(response) {
-        alert(response);
-      },
-      error: function(error) {
-        alert(error.responseJSON['message']);
-      }
-    });
-  }
-  
-  var config = {
-    // replace the publicKey with yours
-    "publicKey": "test_public_key_8a8d3e7858584fc09e112f79abc7052f",
-    "productIdentity": "1234567890",
-    "productName": "Dragon",
-    "productUrl": "http://gameofthrones.wikia.com/wiki/Dragons",
-    "paymentPreference": [
-      "KHALTI",
-      "EBANKING",
-      "MOBILE_BANKING",
-      "CONNECT_IPS",
-      "SCT",
-    ],
-    "eventHandler": {
-      onSuccess(payload) {
-        // hit merchant API for initiating verification
-        console.log(payload);
-  
-        // Retrieve shipping address information from the form
-        var shippingAddress = {
-          address: document.getElementById("address").value,
-          city: document.getElementById("city").value,
-          ward_no: document.getElementById("ward_no").value,
-          zip_code: document.getElementById("zipcode").value,
-          phone: document.getElementById("phone").value
-        };
-  
-        // Merge the payload and shipping address information
-        var mergedPayload = Object.assign({}, payload, { shipping: shippingAddress });
-  
-        // Call the verifyPayment function with the merged payload
-        verifyPayment(mergedPayload);
-      },
-      onError(error) {
-        console.log(error);
-      },
-      onClose() {
-        console.log("widget is closing");
-      }
-    }
-  };
-  
-  var checkout = new KhaltiCheckout(config);
-  var btn = document.getElementById("payment-button");
-  btn.onclick = function() {
-    // minimum transaction amount must be 10, i.e 1000 in paisa.
-    checkout.show({ amount: 1000 });
-  };
-  
-</script>
 
  {% include 'components/footer/footer.html' %}
 
