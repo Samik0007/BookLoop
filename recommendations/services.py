@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-from typing import Iterable, List
+from typing import List
 
 from django.core.cache import cache
+from django.contrib.auth.models import AbstractBaseUser
 from django.db.models import Case, IntegerField, QuerySet, When
 from django.db.models import Count
-from django.contrib.auth import get_user_model
 
 from books.models import OrderItem, Product
 from .models import UserInteraction
-
-User = get_user_model()
 
 
 def _order_by_id_list(qs: QuerySet[Product], id_list: List[int]) -> QuerySet[Product]:
@@ -52,7 +50,10 @@ def _trending_books(limit: int = 10) -> QuerySet[Product]:
     )
 
 
-def get_user_recommendations(user: User, limit: int = 10) -> QuerySet[Product]:
+def get_user_recommendations(
+    user: AbstractBaseUser | None,
+    limit: int = 10,
+) -> QuerySet[Product]:
     """Return a queryset of recommended ``Product`` objects for a user.
 
     Logic:

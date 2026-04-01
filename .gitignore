@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# Local environment secrets
+.env
+
+# Local database
+*.sqlite3
+
+# Django collected/static media artifacts
+staticfiles/
+media/

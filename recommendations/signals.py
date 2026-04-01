@@ -2,11 +2,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractBaseUser
 
 from .models import UserInteraction
-
-User = get_user_model()
 
 
 # Default weights for each implicit action
@@ -20,7 +18,7 @@ ACTION_WEIGHTS = {
 
 def log_user_interaction(
     *,
-    user: User,
+    user: AbstractBaseUser | None,
     book,
     action: str,
     weight: Optional[int] = None,

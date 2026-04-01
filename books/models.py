@@ -368,7 +368,8 @@ class ShippingAddress(models.Model):
     address = models.CharField(max_length=100)
     city = models.CharField(max_length=100, choices=CITY_CHOICES)
     ward_no = models.IntegerField()
-    zip_code = models.IntegerField()
+    # Replaced integer zip code with a contact email for shipping notifications.
+    email = models.EmailField(max_length=254, blank=True, null=True)
     phone = models.IntegerField()
     date_added = models.DateTimeField(auto_now_add=True)
     rating = models.FloatField(default=0)

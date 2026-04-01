@@ -75,6 +75,7 @@ class AddSwapBookView(LoginRequiredMixin, CreateView):
     """
 
     model = Product
+    form_class = SwapBookForm
     template_name = "books/add_swap_book.html"
     login_url = reverse_lazy("login")
 
@@ -87,6 +88,7 @@ class AddSwapBookView(LoginRequiredMixin, CreateView):
         form.instance.seller = self.request.user
         form.instance.listing_type = "swap"
         form.instance.listing_status = "pending"
+        form.instance.price = 0
         if not form.instance.contact_email and self.request.user.email:
             form.instance.contact_email = self.request.user.email
 
@@ -94,13 +96,13 @@ class AddSwapBookView(LoginRequiredMixin, CreateView):
         if not form.instance.genre:
             form.instance.genre = "Swap Listing"
 
-        return super().form_valid(form)
-
-    def get_success_url(self):  # type: ignore[override]
         messages.success(
             self.request,
             "Your book was submitted for swapping and is pending review.",
         )
+        return super().form_valid(form)
+
+    def get_success_url(self):  # type: ignore[override]
         return reverse_lazy("swap_matches")
 
 
@@ -623,7 +625,7 @@ def ProcessOrder(request):
                 address=data['shipping']['address'],
                 city=data['shipping']['city'],
                 ward_no=data['shipping']['ward_no'],
-                zip_code=data['shipping']['zip_code'],
+                email=data['shipping'].get('email') or data['shipping'].get('zip_code'),
                 phone=data['shipping']['phone'],
             )
 

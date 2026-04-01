@@ -2,6 +2,7 @@
 from django import forms
 
 from .models import Product
+from .models import ShippingAddress
 
 
 class BookSearchForm(forms.Form):
@@ -226,6 +227,33 @@ class DonateBookForm(forms.ModelForm):
             "contact_email": "Contact Email",
             "image": "Book Image",
             "description": "Description",
+        }
+
+
+class ShippingAddressForm(forms.ModelForm):
+    """Form for collecting shipping/contact information at checkout.
+
+    Uses the updated ShippingAddress model which stores a contact email
+    instead of a numeric zip code.
+    """
+
+    class Meta:
+        model = ShippingAddress
+        fields = ["address", "city", "ward_no", "email", "phone"]
+        widgets = {
+            "address": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "Address.."}
+            ),
+            "city": forms.Select(attrs={"class": "form-select"}),
+            "ward_no": forms.NumberInput(
+                attrs={"class": "form-control", "placeholder": "Ward no.."}
+            ),
+            "email": forms.EmailInput(
+                attrs={"class": "form-control", "placeholder": "Email address.."}
+            ),
+            "phone": forms.NumberInput(
+                attrs={"class": "form-control", "placeholder": "Phone no.."}
+            ),
         }
         widgets = {
             "Book_name": forms.TextInput(

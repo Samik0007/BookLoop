@@ -217,8 +217,14 @@ EMAIL_HOST_USER = 'samikisdope07@gmail.com'
 EMAIL_HOST_PASSWORD = 'skzabhjkdyafplys'
 
 
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')
+
+
 SITE_ID = 1
 LOGIN_REDIRECT_URL = '/'
+SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_STORE_TOKENS = False
 
 # Django Allauth Configuration (Updated for latest version)
 ACCOUNT_EMAIL_VERIFICATION = 'none'
@@ -230,17 +236,20 @@ ACCOUNT_LOGIN_METHODS = {'username', 'email'}
 # Google OAuth2 Settings
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
+        'APP': {
+            'client_id': GOOGLE_CLIENT_ID,
+            'secret': GOOGLE_CLIENT_SECRET,
+            'key': ''
+        },
         'SCOPE': [
             'profile',
             'email',
         ],
         'AUTH_PARAMS': {
             'access_type': 'online',
+            'prompt': 'select_account',
         },
-        'APP': {
-            'client_id': 'YOUR_GOOGLE_CLIENT_ID',  # Add your Google Client ID
-            'secret': 'YOUR_GOOGLE_CLIENT_SECRET',  # Add your Google Client Secret
-            'key': ''
-        }
+        'OAUTH_PKCE_ENABLED': True,
+        'FETCH_USERINFO': True,
     }
 }
