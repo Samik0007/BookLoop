@@ -38,9 +38,11 @@
 }
 
 .search-card img {
+  display: block;
   width: 100%;
-  height: 260px;
-  object-fit: cover;
+  aspect-ratio: 2 / 3;
+  object-fit: contain;
+  background: #f0eee9;
 }
 
 .search-card-body {
@@ -50,6 +52,10 @@
 .search-card-body h5 {
   font-size: 16px;
   margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .search-meta {
@@ -69,6 +75,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-top: auto;
 }
 
 .search-actions .btn-details {
@@ -103,15 +110,15 @@
     {% if books %}
       {% for book in books %}
       <div class="col-xl-3 col-lg-4 col-md-6">
-        <div class="search-card">
+        <div class="search-card" style="display:flex;flex-direction:column;">
           <a href="{% url 'product' book.id %}">
-                    {% if book.image and "herald" not in book.image.url|lower and "college" not in book.image.url|lower %}
-                    <img class="book-cover-img" src="{{ book.image.url }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
-                    {% else %}
-                    <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
-                    {% endif %}
+            {% if book.image and "herald" not in book.image.url|lower and "college" not in book.image.url|lower %}
+            <img class="book-cover-img" src="{{ book.image.url }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
+            {% else %}
+            <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
+            {% endif %}
           </a>
-          <div class="search-card-body">
+          <div class="search-card-body" style="flex:1;display:flex;flex-direction:column;">
             <h5>{{ book.Book_name }}</h5>
             <div class="search-meta">{{ book.genre }}</div>
             <div class="search-meta"><i class="fas fa-user"></i> {{ book.Author }}</div>
@@ -131,53 +138,18 @@
       </div>
       {% endfor %}
     {% else %}
-      <p>No products found. Try a different keyword.</p>
-    {% endif %}
-  </div>
-</section>
-
-<section class="container" style="margin-top: 50px;">
-  <div class="mb-4">
-    <div class="search-title">Recommended Books for You</div>
-    <p class="text-muted">Based on your browsing and wishlist activity.</p>
-    <hr>
-  </div>
-
-  <div class="row g-4">
-    {% if recommended_books %}
-      {% for book in recommended_books %}
-      <div class="col-xl-3 col-lg-4 col-md-6">
-        <div class="search-card">
-          <a href="{% url 'product' book.id %}">
-            {% if book.imageURL and "herald" not in book.imageURL|lower and "college" not in book.imageURL|lower %}
-            <img class="book-cover-img" src="{{ book.imageURL }}" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
-            {% else %}
-            <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
-            {% endif %}
-          </a>
-          <div class="search-card-body">
-            <h5>{{ book.Book_name }}</h5>
-            <div class="search-meta">{{ book.genre }}</div>
-            <div class="search-meta"><i class="fas fa-user"></i> {{ book.Author }}</div>
-            <div class="search-price">Rs {{ book.price }}</div>
-            <div class="search-actions">
-              <a href="{% url 'product' book.id %}" class="btn-details">Details</a>
-              <button data-product="{{book.id}}" data-action="add" class="icon-btn update-cart">
-                <i class="fas fa-cart-plus"></i>
-              </button>
-              <span class="icon-btn">
-                <i class="fas fa-heart"></i>
-              </span>
-            </div>
-          </div>
+      <div class="col-12" style="padding: 60px 0;">
+        <div style="text-align:center; max-width:480px; margin:0 auto;">
+          <div style="font-size:3rem; margin-bottom:16px;">&#128270;</div>
+          <h4 style="font-family:'Merriweather',serif; color:var(--bw-ink); margin-bottom:10px;">No books found</h4>
+          <p style="color:var(--bw-muted); margin-bottom:24px;">No results for &ldquo;{{ query }}&rdquo;. Try a different title, author, or genre.</p>
+          <a href="{% url 'store' %}" style="display:inline-block; padding:10px 26px; background:var(--bw-accent); color:#fff; border-radius:10px; font-weight:600; text-decoration:none;">&#8592;&nbsp; Back to Store</a>
         </div>
       </div>
-      {% endfor %}
-    {% else %}
-      <p>No recommendations available.</p>
     {% endif %}
   </div>
 </section>
+
 
 <script>
   var updateBtns = document.getElementsByClassName('update-cart')

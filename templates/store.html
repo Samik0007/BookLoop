@@ -160,8 +160,10 @@ body {
 .store-card img {
   position: relative;
   width: 100%;
-  height: 290px;
-  object-fit: cover;
+  aspect-ratio: 2 / 3;         /* fixed portrait ratio — no zooming or cropping */
+  height: auto;
+  object-fit: contain;
+  background: #f0eee9;         /* warm neutral shows full cover without cutting any text */
   border-radius: 18px;
   box-shadow: 0 16px 28px rgba(15, 23, 42, 0.14);
 }
@@ -195,6 +197,10 @@ body {
   line-height: 1.45;
   margin-bottom: 10px;
   color: var(--bw-ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .store-meta-row {

@@ -165,6 +165,15 @@ input[type=number]::-webkit-outer-spin-button {
 }
 /*   otp end */
 
+/* ── Standardised book-cover image (global baseline, overrides via template <style> where needed) ── */
+.book-cover-img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: contain;
+    background: #f0eee9;
+}
+
 
 
 

@@ -1,203 +1,360 @@
 {% load static %}
 {% include 'components/base/base-top.html' %}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet"
+      integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.3/css/all.css"
+      integrity="sha384-SZXxX4whJ79/gErwcOYf+zWLeJdY/qpuqC4cAa9rOGUstPomtqpuNWT9wdPEn2fk" crossorigin="anonymous">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 {% include 'components/header/header.html' %}
 
-<script>
-  document.title = 'List a Book for Swap | BookLoop';
-</script>
-
 <style>
-  .swap-section-card {
-    border-left: 5px solid #1a6b3c;
+  /* ── Swap form page ── */
+  .swap-wrap {
+    min-height: 80vh;
+    padding: 48px 0 64px;
+    font-family: 'Work Sans', sans-serif;
+    background: #f5f7f6;
+  }
+
+  /* outer card */
+  .swap-card {
+    border-radius: 20px;
+    border: 1px solid #e8e4dc;
+    box-shadow: 0 8px 32px rgba(11,31,42,0.09);
+    overflow: hidden;
+  }
+
+  /* gradient header */
+  .swap-header {
+    background: linear-gradient(135deg, #0b6e56 0%, #1f8a70 50%, #14b8a6 100%);
+    padding: 32px 40px 28px;
+    color: #fff;
+  }
+
+  .swap-header h2 {
+    font-family: 'Merriweather', serif;
+    font-size: 1.55rem;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+
+  .swap-header p {
+    margin: 0;
+    opacity: 0.88;
+    font-size: 0.9rem;
+  }
+
+  /* body */
+  .swap-body {
+    background: #fff;
+    padding: 36px 40px 40px;
+  }
+
+  /* info banner */
+  .swap-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 28px;
+  }
+
+  .swap-notice .notice-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #f59e0b;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.82rem;
+  }
+
+  .swap-notice .notice-text strong {
+    display: block;
+    color: #78350f;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .swap-notice .notice-text span {
+    font-size: 0.8rem;
+    color: #92400e;
+  }
+
+  /* section dividers */
+  .swap-section-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0ede8;
+  }
+
+  .swap-section-head .section-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: rgba(31,138,112,0.12);
+    color: #1f8a70;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+  }
+
+  .swap-section-head h6 {
+    font-family: 'Merriweather', serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0b1f2a;
+    margin: 0;
+  }
+
+  /* labels + inputs */
+  .swap-body .form-label {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #0b1f2a;
+    margin-bottom: 6px;
+  }
+
+  .swap-body .form-control,
+  .swap-body .form-select {
+    border-radius: 10px;
+    border: 1px solid #dde3e9;
+    font-size: 0.92rem;
+    padding: 10px 14px;
+    height: auto;
+    transition: border-color 0.18s, box-shadow 0.18s;
+  }
+
+  .swap-body .form-control:focus,
+  .swap-body .form-select:focus {
+    border-color: #1f8a70;
+    box-shadow: 0 0 0 3px rgba(31,138,112,0.15);
+    outline: none;
+  }
+
+  .swap-body textarea.form-control {
+    resize: vertical;
+    min-height: 110px;
+  }
+
+  .swap-body input[type="file"].form-control {
+    padding: 8px 14px;
+  }
+
+  .field-error {
+    font-size: 0.8rem;
+    color: #dc3545;
+    margin-top: 4px;
+  }
+
+  .field-hint {
+    font-size: 0.78rem;
+    color: #52616b;
+    margin-top: 4px;
+  }
+
+  /* submit button */
+  .swap-submit {
+    background: linear-gradient(135deg, #0b6e56, #1f8a70);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 13px 0;
+    font-weight: 700;
+    font-size: 1rem;
+    width: 100%;
+    transition: opacity 0.18s, transform 0.18s;
+    margin-top: 8px;
+  }
+
+  .swap-submit:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+    color: #fff;
+  }
+
+  .swap-section-gap { margin-bottom: 28px; }
+
+  @media (max-width: 575px) {
+    .swap-header, .swap-body { padding-left: 22px; padding-right: 22px; }
   }
 </style>
 
-<div class="container py-5 my-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-10 col-xl-9">
-      <!-- Page header -->
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-        <div>
-          <h2 class="mb-1">List a Book for Swap</h2>
-          <div class="text-muted">Share your book with another student in Nepal.</div>
-        </div>
+<script>document.title = 'List a Book for Swap | BookLoop';</script>
+
+<div class="swap-wrap">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-9 col-xl-8">
+
+        <div class="swap-card">
+
+          <!-- ── Header ── -->
+          <div class="swap-header">
+            <h2><i class="fas fa-exchange-alt me-2" style="opacity:.85;"></i>List a Book for Swap</h2>
+            <p>Share your book with another student in Nepal.</p>
+          </div>
+
+          <!-- ── Body ── -->
+          <div class="swap-body">
+
+            <!-- Notice -->
+            <div class="swap-notice">
+              <div class="notice-icon"><i class="fas fa-info"></i></div>
+              <div class="notice-text">
+                <strong>Your listing will be reviewed before going live.</strong>
+                <span>Owner is saved automatically — no need to fill it in.</span>
+              </div>
+            </div>
+
+            <!-- Non-field errors -->
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger rounded-3 mb-4">
+                {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+              </div>
+            {% endif %}
+
+            <form method="POST" enctype="multipart/form-data" novalidate>
+              {% csrf_token %}
+
+              <!-- ── Section 1: Book Details ── -->
+              <div class="swap-section-gap">
+                <div class="swap-section-head">
+                  <div class="section-icon"><i class="fas fa-book"></i></div>
+                  <h6>Book Details</h6>
+                </div>
+                <div class="row g-3">
+
+                  <div class="col-md-6">
+                    <label for="{{ form.Book_name.id_for_label }}" class="form-label">
+                      Book Title {% if form.Book_name.field.required %}<span class="text-danger">*</span>{% endif %}
+                    </label>
+                    {{ form.Book_name }}
+                    {% if form.Book_name.help_text %}<div class="field-hint">{{ form.Book_name.help_text }}</div>{% endif %}
+                    {% if form.Book_name.errors %}<div class="field-error">{% for e in form.Book_name.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                  </div>
+
+                  <div class="col-md-6">
+                    <label for="{{ form.Author.id_for_label }}" class="form-label">
+                      Author {% if form.Author.field.required %}<span class="text-danger">*</span>{% endif %}
+                    </label>
+                    {{ form.Author }}
+                    {% if form.Author.help_text %}<div class="field-hint">{{ form.Author.help_text }}</div>{% endif %}
+                    {% if form.Author.errors %}<div class="field-error">{% for e in form.Author.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                  </div>
+
+                  <div class="col-md-6">
+                    <label for="{{ form.genre.id_for_label }}" class="form-label">
+                      Genre {% if form.genre.field.required %}<span class="text-danger">*</span>{% endif %}
+                    </label>
+                    {{ form.genre }}
+                    {% if form.genre.help_text %}<div class="field-hint">{{ form.genre.help_text }}</div>{% endif %}
+                    {% if form.genre.errors %}<div class="field-error">{% for e in form.genre.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                  </div>
+
+                  <div class="col-md-6">
+                    <label for="{{ form.condition.id_for_label }}" class="form-label">
+                      Condition {% if form.condition.field.required %}<span class="text-danger">*</span>{% endif %}
+                    </label>
+                    {{ form.condition }}
+                    {% if form.condition.help_text %}<div class="field-hint">{{ form.condition.help_text }}</div>{% endif %}
+                    {% if form.condition.errors %}<div class="field-error">{% for e in form.condition.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- ── Section 2: Swap Details ── -->
+              <div class="swap-section-gap">
+                <div class="swap-section-head">
+                  <div class="section-icon"><i class="fas fa-images"></i></div>
+                  <h6>Swap Details</h6>
+                </div>
+                <div class="row g-3">
+
+                  <div class="col-12">
+                    <label for="{{ form.image.id_for_label }}" class="form-label">
+                      Book Image <span class="text-muted fw-normal">(optional)</span>
+                    </label>
+                    {{ form.image }}
+                    {% if form.image.help_text %}<div class="field-hint">{{ form.image.help_text }}</div>{% endif %}
+                    {% if form.image.errors %}<div class="field-error">{% for e in form.image.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                  </div>
+
+                  <div class="col-12">
+                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                      Description <span class="text-muted fw-normal">(optional)</span>
+                    </label>
+                    {{ form.description }}
+                    {% if form.description.help_text %}<div class="field-hint">{{ form.description.help_text }}</div>{% endif %}
+                    {% if form.description.errors %}<div class="field-error">{% for e in form.description.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                  </div>
+
+                  <div class="col-12">
+                    <label for="{{ form.swap_preference.id_for_label }}" class="form-label">
+                      Books Wanted in Exchange {% if form.swap_preference.field.required %}<span class="text-danger">*</span>{% endif %}
+                    </label>
+                    {{ form.swap_preference }}
+                    {% if form.swap_preference.help_text %}<div class="field-hint">{{ form.swap_preference.help_text }}</div>{% endif %}
+                    {% if form.swap_preference.errors %}<div class="field-error">{% for e in form.swap_preference.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- ── Section 3: Contact & Location ── -->
+              <div class="swap-section-gap">
+                <div class="swap-section-head">
+                  <div class="section-icon"><i class="fas fa-map-marker-alt"></i></div>
+                  <h6>Contact &amp; Location</h6>
+                </div>
+                <div class="row g-3">
+
+                  <div class="col-md-6">
+                    <label for="{{ form.location.id_for_label }}" class="form-label">
+                      Pickup Location {% if form.location.field.required %}<span class="text-danger">*</span>{% endif %}
+                    </label>
+                    {{ form.location }}
+                    {% if form.location.help_text %}<div class="field-hint">{{ form.location.help_text }}</div>{% endif %}
+                    {% if form.location.errors %}<div class="field-error">{% for e in form.location.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                  </div>
+
+                  <div class="col-md-6">
+                    <label for="{{ form.contact_email.id_for_label }}" class="form-label">
+                      Contact Email {% if form.contact_email.field.required %}<span class="text-danger">*</span>{% endif %}
+                    </label>
+                    {{ form.contact_email }}
+                    {% if form.contact_email.help_text %}<div class="field-hint">{{ form.contact_email.help_text }}</div>{% endif %}
+                    {% if form.contact_email.errors %}<div class="field-error">{% for e in form.contact_email.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                  </div>
+
+                </div>
+              </div>
+
+              <button type="submit" class="swap-submit">
+                <i class="fas fa-exchange-alt me-2"></i>Submit Swap Listing
+              </button>
+
+            </form>
+          </div><!-- /.swap-body -->
+        </div><!-- /.swap-card -->
+
       </div>
-
-      <!-- Info banner -->
-      <div class="alert alert-info border" role="alert">
-        <strong>Note:</strong> Your listing will be reviewed by an admin before going live.
-        <div class="small text-muted mt-1">Owner is saved automatically for security.</div>
-      </div>
-
-      {% if form.non_field_errors %}
-        <div class="alert alert-danger" role="alert">
-          {% for error in form.non_field_errors %}
-            <div>{{ error }}</div>
-          {% endfor %}
-        </div>
-      {% endif %}
-
-      <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
-        {% csrf_token %}
-
-        <!-- Section 1: Book Details -->
-        <div class="card shadow-sm border-0 swap-section-card mb-4">
-          <div class="card-body p-4">
-            <h5 class="mb-3">Book Details</h5>
-
-            <div class="row g-3">
-              <div class="col-12 col-md-6">
-                <label for="{{ form.Book_name.id_for_label }}" class="form-label">
-                  {{ form.Book_name.label }}{% if form.Book_name.field.required %} <span class="text-danger">*</span>{% endif %}
-                </label>
-                {{ form.Book_name }}
-                {% if form.Book_name.help_text %}<div class="form-text">{{ form.Book_name.help_text }}</div>{% endif %}
-                {% if form.Book_name.errors %}
-                  <div class="invalid-feedback d-block">
-                    {% for error in form.Book_name.errors %}<div>{{ error }}</div>{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-
-              <div class="col-12 col-md-6">
-                <label for="{{ form.Author.id_for_label }}" class="form-label">
-                  {{ form.Author.label }}{% if form.Author.field.required %} <span class="text-danger">*</span>{% endif %}
-                </label>
-                {{ form.Author }}
-                {% if form.Author.help_text %}<div class="form-text">{{ form.Author.help_text }}</div>{% endif %}
-                {% if form.Author.errors %}
-                  <div class="invalid-feedback d-block">
-                    {% for error in form.Author.errors %}<div>{{ error }}</div>{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-
-              <div class="col-12 col-md-6">
-                <label for="{{ form.genre.id_for_label }}" class="form-label">
-                  {{ form.genre.label }}{% if form.genre.field.required %} <span class="text-danger">*</span>{% endif %}
-                </label>
-                {{ form.genre }}
-                {% if form.genre.help_text %}<div class="form-text">{{ form.genre.help_text }}</div>{% endif %}
-                {% if form.genre.errors %}
-                  <div class="invalid-feedback d-block">
-                    {% for error in form.genre.errors %}<div>{{ error }}</div>{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-
-              <div class="col-12 col-md-6">
-                <label for="{{ form.condition.id_for_label }}" class="form-label">
-                  {{ form.condition.label }}{% if form.condition.field.required %} <span class="text-danger">*</span>{% endif %}
-                </label>
-                {{ form.condition }}
-                {% if form.condition.help_text %}<div class="form-text">{{ form.condition.help_text }}</div>{% endif %}
-                {% if form.condition.errors %}
-                  <div class="invalid-feedback d-block">
-                    {% for error in form.condition.errors %}<div>{{ error }}</div>{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Section 2: Upload & Description -->
-        <div class="card shadow-sm border-0 swap-section-card mb-4">
-          <div class="card-body p-4">
-            <h5 class="mb-3">Upload &amp; Description</h5>
-
-            <div class="row g-3">
-              <div class="col-12 col-md-6">
-                <label for="{{ form.image.id_for_label }}" class="form-label">
-                  {{ form.image.label }}{% if form.image.field.required %} <span class="text-danger">*</span>{% endif %}
-                </label>
-                {{ form.image }}
-                {% if form.image.help_text %}<div class="form-text">{{ form.image.help_text }}</div>{% endif %}
-                {% if form.image.errors %}
-                  <div class="invalid-feedback d-block">
-                    {% for error in form.image.errors %}<div>{{ error }}</div>{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-
-              <div class="col-12 col-md-6">
-                <label for="{{ form.description.id_for_label }}" class="form-label">
-                  {{ form.description.label }}{% if form.description.field.required %} <span class="text-danger">*</span>{% endif %}
-                </label>
-                {{ form.description }}
-                {% if form.description.help_text %}<div class="form-text">{{ form.description.help_text }}</div>{% endif %}
-                {% if form.description.errors %}
-                  <div class="invalid-feedback d-block">
-                    {% for error in form.description.errors %}<div>{{ error }}</div>{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Section 3: Swap Preferences -->
-        <div class="card shadow-sm border-0 swap-section-card mb-4">
-          <div class="card-body p-4">
-            <h5 class="mb-3">Swap Preferences</h5>
-
-            <div class="row g-3">
-              <div class="col-12">
-                <label for="{{ form.swap_preference.id_for_label }}" class="form-label">
-                  {{ form.swap_preference.label }}{% if form.swap_preference.field.required %} <span class="text-danger">*</span>{% endif %}
-                </label>
-                {{ form.swap_preference }}
-                {% if form.swap_preference.help_text %}<div class="form-text">{{ form.swap_preference.help_text }}</div>{% endif %}
-                {% if form.swap_preference.errors %}
-                  <div class="invalid-feedback d-block">
-                    {% for error in form.swap_preference.errors %}<div>{{ error }}</div>{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Section 4: Contact & Location -->
-        <div class="card shadow-sm border-0 swap-section-card mb-4">
-          <div class="card-body p-4">
-            <h5 class="mb-3">Contact &amp; Location</h5>
-
-            <div class="row g-3">
-              <div class="col-12 col-md-6">
-                <label for="{{ form.location.id_for_label }}" class="form-label">
-                  {{ form.location.label }}{% if form.location.field.required %} <span class="text-danger">*</span>{% endif %}
-                </label>
-                {{ form.location }}
-                {% if form.location.help_text %}<div class="form-text">{{ form.location.help_text }}</div>{% endif %}
-                {% if form.location.errors %}
-                  <div class="invalid-feedback d-block">
-                    {% for error in form.location.errors %}<div>{{ error }}</div>{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-
-              <div class="col-12 col-md-6">
-                <label for="{{ form.contact_email.id_for_label }}" class="form-label">
-                  {{ form.contact_email.label }}{% if form.contact_email.field.required %} <span class="text-danger">*</span>{% endif %}
-                </label>
-                {{ form.contact_email }}
-                {% if form.contact_email.help_text %}<div class="form-text">{{ form.contact_email.help_text }}</div>{% endif %}
-                {% if form.contact_email.errors %}
-                  <div class="invalid-feedback d-block">
-                    {% for error in form.contact_email.errors %}<div>{{ error }}</div>{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <button type="submit" class="btn btn-success w-100 py-2">
-          <i class="fa fa-exchange me-2" aria-hidden="true"></i>
-          Submit Swap Listing
-        </button>
-      </form>
     </div>
   </div>
 </div>

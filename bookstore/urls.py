@@ -28,6 +28,7 @@ urlpatterns = [
     path('',include('books.urls')),
     path('',include('authentication.urls')),
     path('', include('transactions.urls')),
+    path('', include('recommendations.urls')),
 
    
 ]

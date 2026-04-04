@@ -3,65 +3,243 @@
 {% include 'components/header/header.html' %}
 
 <style>
-  .rounded-top-4 {
-    border-top-left-radius: 1rem !important;
-    border-top-right-radius: 1rem !important;
+  /* ── Donate page ── */
+  .donate-wrap {
+    min-height: 80vh;
+    padding: 48px 0 64px;
+  }
+
+  .donate-card {
+    border-radius: 20px;
+    border: 1px solid #e8e4dc;
+    box-shadow: 0 8px 32px rgba(11, 31, 42, 0.09);
+  }
+
+  .donate-header {
+    background: linear-gradient(135deg, #1f8a70 0%, #14b8a6 100%);
+    border-radius: 20px 20px 0 0;
+    padding: 32px 40px 28px;
+    color: #fff;
+  }
+
+  .donate-header h2 {
+    font-family: 'Merriweather', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+
+  .donate-header p {
+    margin: 0;
+    opacity: 0.88;
+    font-size: 0.9rem;
+  }
+
+  .donate-body {
+    padding: 36px 40px 40px;
+  }
+
+  /* donor badge */
+  .donor-badge {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #f0faf6;
+    border: 1px solid #a7f3d0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 28px;
+  }
+
+  .donor-badge .badge-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #1f8a70;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.85rem;
+  }
+
+  .donor-badge .badge-text strong {
+    display: block;
+    color: #0b1f2a;
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+
+  .donor-badge .badge-text span {
+    font-size: 0.8rem;
+    color: #52616b;
+  }
+
+  /* form fields */
+  .donate-body .form-label {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #0b1f2a;
+    margin-bottom: 6px;
+  }
+
+  .donate-body .form-control,
+  .donate-body .form-select {
+    border-radius: 10px;
+    border: 1px solid #dde3e9;
+    font-size: 0.92rem;
+    padding: 10px 14px;
+    height: auto;
+    transition: border-color 0.18s, box-shadow 0.18s;
+  }
+
+  .donate-body .form-control:focus,
+  .donate-body .form-select:focus {
+    border-color: #1f8a70;
+    box-shadow: 0 0 0 3px rgba(31, 138, 112, 0.15);
+    outline: none;
+  }
+
+  .donate-body textarea.form-control {
+    resize: vertical;
+    min-height: 110px;
+  }
+
+  .donate-body input[type="file"].form-control {
+    padding: 8px 14px;
+  }
+
+  .field-error {
+    font-size: 0.8rem;
+    color: #dc3545;
+    margin-top: 4px;
+  }
+
+  .donate-submit {
+    background: linear-gradient(135deg, #1f8a70, #14b8a6);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 13px 0;
+    font-weight: 700;
+    font-size: 1rem;
+    width: 100%;
+    transition: opacity 0.18s, transform 0.18s;
+    margin-top: 8px;
+  }
+
+  .donate-submit:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 575px) {
+    .donate-header,
+    .donate-body {
+      padding-left: 22px;
+      padding-right: 22px;
+    }
   }
 </style>
 
-<div class="container py-5 my-5">
-  <div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-      <div class="card shadow-lg border-0 rounded-4">
-        <div class="card-header bg-primary text-white text-center py-3 rounded-top-4">
-          <h3 class="mb-1">Donate a Book</h3>
-          <div class="opacity-75" style="font-size: 14px;">Help a student in need by donating your unused books.</div>
-        </div>
+<div class="donate-wrap">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 col-xl-7">
 
-        <div class="card-body p-4">
-          <div class="alert alert-light border mb-4" role="alert">
-            Donating as:
-            <strong>
-              {% if request.user.get_full_name %}
-                {{ request.user.get_full_name }}
-              {% else %}
-                {{ request.user.username }}
-              {% endif %}
-            </strong>
-            <div class="text-muted" style="font-size: 13px;">Your donation will be visible after admin approval.</div>
+        <div class="donate-card">
+
+          <!-- ── Header ── -->
+          <div class="donate-header">
+            <h2><i class="fas fa-hand-holding-heart me-2" style="opacity:.85;"></i>Donate a Book</h2>
+            <p>Give your book a second life by helping another student.</p>
           </div>
 
-          {% if form.non_field_errors %}
-            <div class="alert alert-danger mb-3" role="alert">
-              {% for error in form.non_field_errors %}
-                <div>{{ error }}</div>
-              {% endfor %}
-            </div>
-          {% endif %}
+          <!-- ── Body ── -->
+          <div class="donate-body">
 
-          <form method="POST" enctype="multipart/form-data">
-            {% csrf_token %}
-
-            {% for field in form %}
-              <div class="mb-4">
-                <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}
-                  <small class="text-muted d-block mt-1">{{ field.help_text }}</small>
-                {% endif %}
-                {% if field.errors %}
-                  <div class="text-danger mt-1">
-                    {% for error in field.errors %}
-                      <div>{{ error }}</div>
-                    {% endfor %}
-                  </div>
-                {% endif %}
+            <!-- Donor info -->
+            <div class="donor-badge">
+              <div class="badge-icon"><i class="fas fa-user"></i></div>
+              <div class="badge-text">
+                <strong>
+                  Donating as:
+                  {% if request.user.get_full_name %}{{ request.user.get_full_name }}{% else %}{{ request.user.username }}{% endif %}
+                </strong>
+                <span>Your donation will be visible after admin approval.</span>
               </div>
-            {% endfor %}
+            </div>
 
-            <button type="submit" class="btn btn-success w-100 mt-2">Submit Donation</button>
-          </form>
-        </div>
+            <!-- Non-field errors -->
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger rounded-3 mb-4" role="alert">
+                {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+              </div>
+            {% endif %}
+
+            <form method="POST" enctype="multipart/form-data">
+              {% csrf_token %}
+
+              <!-- Row 1: Title + Author -->
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="{{ form.Book_name.id_for_label }}" class="form-label">Book Title</label>
+                  {{ form.Book_name }}
+                  {% if form.Book_name.errors %}<div class="field-error">{% for e in form.Book_name.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                  <label for="{{ form.Author.id_for_label }}" class="form-label">Author</label>
+                  {{ form.Author }}
+                  {% if form.Author.errors %}<div class="field-error">{% for e in form.Author.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                </div>
+              </div>
+
+              <!-- Row 2: Condition + Pickup Location -->
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="{{ form.condition.id_for_label }}" class="form-label">Book Condition</label>
+                  {{ form.condition }}
+                  {% if form.condition.errors %}<div class="field-error">{% for e in form.condition.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                  <label for="{{ form.location.id_for_label }}" class="form-label">Pickup Location</label>
+                  {{ form.location }}
+                  {% if form.location.errors %}<div class="field-error">{% for e in form.location.errors %}{{ e }}{% endfor %}</div>{% endif %}
+                </div>
+              </div>
+
+              <!-- Row 3: Contact Email (full width) -->
+              <div class="mb-3">
+                <label for="{{ form.contact_email.id_for_label }}" class="form-label">Contact Email</label>
+                {{ form.contact_email }}
+                {% if form.contact_email.errors %}<div class="field-error">{% for e in form.contact_email.errors %}{{ e }}{% endfor %}</div>{% endif %}
+              </div>
+
+              <!-- Row 4: Book Image (full width) -->
+              <div class="mb-3">
+                <label for="{{ form.image.id_for_label }}" class="form-label">Book Image <span class="text-muted fw-normal">(optional)</span></label>
+                {{ form.image }}
+                {% if form.image.help_text %}<small class="text-muted d-block mt-1">{{ form.image.help_text }}</small>{% endif %}
+                {% if form.image.errors %}<div class="field-error">{% for e in form.image.errors %}{{ e }}{% endfor %}</div>{% endif %}
+              </div>
+
+              <!-- Row 5: Description (full width) -->
+              <div class="mb-4">
+                <label for="{{ form.description.id_for_label }}" class="form-label">Description <span class="text-muted fw-normal">(optional)</span></label>
+                {{ form.description }}
+                {% if form.description.help_text %}<small class="text-muted d-block mt-1">{{ form.description.help_text }}</small>{% endif %}
+                {% if form.description.errors %}<div class="field-error">{% for e in form.description.errors %}{{ e }}{% endfor %}</div>{% endif %}
+              </div>
+
+              <button type="submit" class="donate-submit">
+                <i class="fas fa-paper-plane me-2"></i>Submit Donation
+              </button>
+            </form>
+
+          </div><!-- /.donate-body -->
+        </div><!-- /.donate-card -->
+
       </div>
     </div>
   </div>

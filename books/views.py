@@ -494,21 +494,12 @@ def search(request):
     query = request.GET.get('q', '').strip()
     books = Product.objects.none()
     cartItems = 0
-    recommended_books = []
 
     if request.user.is_authenticated:
         order, _ = Order.objects.get_or_create(
             user=request.user.username, complete=False
         )
         cartItems = order.get_cart_items
-        recommended_books = get_recommendations_for_user(request.user, num_recommendations=8)
-    else:
-        from django.db.models import Count
-        recommended_books = Product.objects.annotate(
-            order_count=Count('orderitem', filter=Q(orderitem__order__complete=True))
-        ).order_by('-order_count')[:8]
-        if not recommended_books.exists():
-            recommended_books = Product.objects.all()[:8]
 
     if query:
         tokens = [t for t in query.split() if t]
@@ -548,7 +539,6 @@ def search(request):
         'query': query,
         'books': books,
         'cartItems': cartItems,
-        'recommended_books': recommended_books,
         'result_count': books.count()
     })
 

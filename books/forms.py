@@ -203,7 +203,7 @@ class DonateBookForm(forms.ModelForm):
         ),
         widget=forms.Select(
             attrs={
-                "class": "form-select mb-3",
+                "class": "form-select",
             }
         ),
     )

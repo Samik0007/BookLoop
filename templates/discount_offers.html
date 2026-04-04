@@ -1,74 +1,365 @@
 {% load static %}
 {% include 'components/base/base-top.html' %}
+
+<!-- Bootstrap + icons + fonts (matching rest of site) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet"
+      integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.3/css/all.css"
+      integrity="sha384-SZXxX4whJ79/gErwcOYf+zWLeJdY/qpuqC4cAa9rOGUstPomtqpuNWT9wdPEn2fk" crossorigin="anonymous">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 {% include 'components/header/header.html' %}
 
-<section class="store-hero">
-  <div class="container">
-    <div class="store-shell">
-      <div class="store-topbar">
-        <div>
-          <div class="store-eyebrow"><i class="fas fa-tags"></i> Limited time deals</div>
-          <div class="store-title">Smart Discount Offers</div>
-          <p class="store-subtitle">Books with plenty of stock and lower views get an automatic 10% off, without ever changing their original price in the database.</p>
-        </div>
-      </div>
+<style>
+/* ── CSS variables ── */
+:root {
+  --bw-ink:          #0b1f2a;
+  --bw-muted:        #52616b;
+  --bw-accent:       #1f8a70;
+  --bw-accent-soft:  #e8f7f3;
+  --bw-surface:      #ffffff;
+  --bw-paper:        #f7f3eb;
+  --bw-shadow:       0 8px 28px rgba(11,31,42,0.09);
+  --bw-shadow-hover: 0 18px 44px rgba(11,31,42,0.15);
+}
 
-      <div class="store-grid">
-        {% for product in discount_books %}
-        <div class="store-card">
-          <div class="store-card-media">
-            <div class="store-badge"><i class="fas fa-percentage"></i> 10% OFF</div>
+body {
+  font-family: 'Work Sans', sans-serif;
+  color: var(--bw-ink);
+  background: #f5f7f6;
+}
+
+/* ── Page hero / shell ── */
+.discount-hero {
+  background: linear-gradient(135deg, #e8f7f3 0%, #fff8f0 100%);
+  border-bottom: 1px solid #e0ede9;
+  padding: 48px 0 36px;
+}
+
+.discount-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--bw-accent);
+  background: rgba(31,138,112,0.1);
+  padding: 6px 14px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+}
+
+.discount-title {
+  font-family: 'Merriweather', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--bw-ink);
+  line-height: 1.25;
+  margin-bottom: 10px;
+}
+
+.discount-sub {
+  color: var(--bw-muted);
+  font-size: 0.92rem;
+  max-width: 560px;
+  line-height: 1.6;
+}
+
+/* ── Grid ── */
+.discount-grid-wrap {
+  padding: 40px 0 64px;
+}
+
+/* ── Cards ── */
+.disc-card {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--bw-surface);
+  border: 1px solid rgba(255,255,255,0.75);
+  box-shadow: var(--bw-shadow);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.disc-card:hover {
+  transform: translateY(-7px);
+  box-shadow: var(--bw-shadow-hover);
+}
+
+/* image wrapper — standardised 2:3 portrait ratio */
+.disc-img-wrap {
+  position: relative;
+  padding: 16px 16px 0;
+}
+
+.disc-img-wrap a {
+  display: block;
+}
+
+.disc-img-wrap img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: contain;
+  background: #f0eee9;
+  border-radius: 14px;
+  box-shadow: 0 12px 24px rgba(15,23,42,0.11);
+}
+
+/* floating deal badge */
+.disc-badge {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 2;
+  background: #e11d48;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  padding: 5px 10px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(225,29,72,0.35);
+}
+
+/* card body */
+.disc-body {
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.disc-title {
+  font-family: 'Merriweather', serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--bw-ink);
+  margin: 0 0 6px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.disc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.disc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: var(--bw-muted);
+  background: #f8fafc;
+  border: 1px solid rgba(148,163,184,0.22);
+  border-radius: 999px;
+  padding: 5px 9px;
+}
+
+/* pricing */
+.disc-price-block {
+  margin-bottom: 14px;
+}
+
+.disc-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--bw-muted);
+  margin-bottom: 4px;
+}
+
+.disc-orig {
+  font-size: 0.84rem;
+  color: var(--bw-muted);
+  text-decoration: line-through;
+  margin-right: 6px;
+}
+
+.disc-new {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--bw-accent);
+  line-height: 1;
+}
+
+.disc-saving {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #e11d48;
+  background: rgba(225,29,72,0.08);
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-left: 8px;
+}
+
+/* actions */
+.disc-actions {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.disc-btn-details {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.87rem;
+  text-decoration: none;
+  background: linear-gradient(135deg, var(--bw-accent), #14b8a6);
+  color: #fff;
+  border: none;
+  box-shadow: 0 8px 20px rgba(15,118,110,0.2);
+  transition: all 0.2s ease;
+}
+
+.disc-btn-details:hover {
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.disc-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.24);
+  background: #fff;
+  color: var(--bw-ink);
+  box-shadow: 0 6px 14px rgba(15,23,42,0.06);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.disc-icon-btn:hover { transform: translateY(-1px); }
+
+.disc-cart-btn:hover {
+  color: var(--bw-accent);
+  border-color: rgba(31,138,112,0.35);
+  background: var(--bw-accent-soft);
+}
+
+.disc-wish-btn:hover {
+  color: #e11d48;
+  border-color: rgba(225,29,72,0.25);
+  background: rgba(225,29,72,0.06);
+}
+
+/* empty state */
+.disc-empty {
+  text-align: center;
+  padding: 56px 24px;
+  border-radius: 20px;
+  background: var(--bw-surface);
+  border: 2px dashed rgba(148,163,184,0.3);
+  grid-column: 1 / -1;
+}
+
+.disc-empty i {
+  font-size: 2.8rem;
+  color: var(--bw-accent);
+  margin-bottom: 14px;
+  display: block;
+}
+</style>
+
+<!-- ── Hero ── -->
+<section class="discount-hero">
+  <div class="container">
+    <div class="discount-eyebrow"><i class="fas fa-bolt"></i> Limited time deals</div>
+    <h1 class="discount-title">Smart Discount Offers</h1>
+    <p class="discount-sub">Books with plenty of stock and lower views get an automatic 10% off — without ever changing their original price.</p>
+  </div>
+</section>
+
+<!-- ── Grid ── -->
+<section class="discount-grid-wrap">
+  <div class="container">
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
+      {% for product in discount_books %}
+      <div class="col">
+        <div class="disc-card">
+
+          <!-- image + floating badge -->
+          <div class="disc-img-wrap">
+            <span class="disc-badge"><i class="fas fa-percentage"></i> 10% OFF</span>
             <a href="{% url 'product' product.id %}">
               {% if product.image %}
-              <img class="book-cover-img" src="{{ product.image.url }}" alt="{{ product.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
+              <img src="{{ product.image.url }}" alt="{{ product.Book_name }}"
+                   data-fallback="{% static 'images/default_cover.jpg' %}"
+                   onerror="this.onerror=null;this.src=this.dataset.fallback;">
               {% else %}
-              <img class="book-cover-img" src="{% static 'images/default_cover.jpg' %}" alt="{{ product.Book_name }}">
+              <img src="{% static 'images/default_cover.jpg' %}" alt="{{ product.Book_name }}">
               {% endif %}
             </a>
           </div>
-          <div class="store-body">
-            <h5>{{ product.Book_name }}</h5>
-            <div class="store-meta-row">
-              <span class="store-chip"><i class="fas fa-layer-group"></i> {{ product.genre }}</span>
-              <span class="store-chip"><i class="fas fa-user-edit"></i> {{ product.Author }}</span>
+
+          <!-- body -->
+          <div class="disc-body">
+            <h5 class="disc-title">{{ product.Book_name }}</h5>
+            <div class="disc-meta">
+              <span class="disc-chip"><i class="fas fa-layer-group"></i> {{ product.genre }}</span>
+              <span class="disc-chip"><i class="fas fa-user-edit"></i> {{ product.Author|truncatewords:3 }}</span>
             </div>
-            <div class="store-price-row">
-              <div class="store-price">
-                <small>Discounted price</small>
-                <div>
-                  <del>Rs. {{ product.price }}</del>
-                  <span style="margin-left: 8px;">Rs. {{ product.discounted_price }}</span>
-                </div>
-              </div>
-              <div class="store-rating">
-                <i class="fas fa-bolt"></i>
-                <span>Smart deal</span>
+
+            <div class="disc-price-block">
+              <div class="disc-label">Your price</div>
+              <div>
+                <del class="disc-orig">Rs. {{ product.price }}</del>
+                <span class="disc-new">Rs. {{ product.discounted_price }}</span>
+                <span class="disc-saving">Save 10%</span>
               </div>
             </div>
-            <div class="store-actions">
-              <a href="{% url 'product' product.id %}" class="btn-details">
-                View Details
-                <i class="fas fa-arrow-right"></i>
+
+            <div class="disc-actions">
+              <a href="{% url 'product' product.id %}" class="disc-btn-details">
+                View <i class="fas fa-arrow-right"></i>
               </a>
-              <button data-product="{{product.id}}" data-action="add" class="icon-btn cart-btn update-cart" title="Add to cart">
+              <button data-product="{{ product.id }}" data-action="add"
+                      class="disc-icon-btn disc-cart-btn update-cart" title="Add to cart">
                 <i class="fas fa-cart-plus"></i>
               </button>
               {% csrf_token %}
-              <span class="product_data addToWishlist icon-btn wish-btn" title="Add to wishlist">
+              <span class="product_data addToWishlist disc-icon-btn disc-wish-btn" title="Save to wishlist">
                 <i class="fas fa-heart"></i>
-                <input type="hidden" value="{{product.id}}" class="prod_id">
+                <input type="hidden" value="{{ product.id }}" class="prod_id">
               </span>
             </div>
           </div>
+
         </div>
-        {% empty %}
-        <div class="empty-state">
-          <i class="fas fa-clipboard-list"></i>
-          <h4>No discountable books right now</h4>
-          <p>Once some books have high stock and low views, they will automatically appear here.</p>
-        </div>
-        {% endfor %}
       </div>
+      {% empty %}
+      <div class="col-12">
+        <div class="disc-empty">
+          <i class="fas fa-clipboard-list"></i>
+          <h4 style="font-family:'Merriweather',serif; margin-bottom:8px;">No active deals right now</h4>
+          <p style="color:var(--bw-muted); margin:0;">Once some books have high stock and low views, they'll automatically appear here.</p>
+        </div>
+      </div>
+      {% endfor %}
     </div>
   </div>
 </section>
