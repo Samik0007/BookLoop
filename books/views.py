@@ -177,8 +177,9 @@ def index_page(request):
     cartItems = 0
     recommended_books = []
     all_books = (
-        Product.objects.filter(listing_type="sell", listing_status="approved")
-        .order_by("-id")
+        Product.objects.select_related("seller")
+        .filter(listing_type="sell", listing_status="approved")
+        .order_by("-id")[:10]
     )
     featured_books = (
         Product.objects.filter(listing_type="sell", listing_status="approved")

@@ -279,6 +279,26 @@ h1, h2, h3 {
     border-radius: 10px;
 }
 
+.btn-browse-more {
+    display: inline-block;
+    background-color: #1f8a70;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 14px 48px;
+    border-radius: 50px;
+    text-decoration: none;
+    letter-spacing: 0.4px;
+    box-shadow: 0 4px 18px rgba(31,138,112,0.22);
+    transition: background-color 0.22s ease, box-shadow 0.22s ease, transform 0.15s ease;
+}
+.btn-browse-more:hover {
+    background-color: #166a56;
+    box-shadow: 0 6px 24px rgba(31,138,112,0.32);
+    transform: translateY(-2px);
+    color: #fff;
+}
+
 .gallery {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -438,8 +458,8 @@ h1, h2, h3 {
 <section class="container panel">
     <div class="section-title">
         <div>
-            <h2>All Books</h2>
-            <p>Browse the full Book Loop collection.</p>
+            <h2 class="fw-bold text-dark mb-1">Explore Our Collection</h2>
+            <p>Handpicked academic resources for your next semester.</p>
         </div>
     </div>
     <div class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-4 justify-content-start">
@@ -465,6 +485,11 @@ h1, h2, h3 {
         {% empty %}
         <p style="color: var(--muted);">No books available right now.</p>
         {% endfor %}
+    </div>
+    <div class="text-center mt-5 mb-4">
+        <a href="{% url 'store' %}" class="btn-browse-more">
+            Browse All Books &nbsp;<i class="fas fa-arrow-right"></i>
+        </a>
     </div>
 </section>
 
