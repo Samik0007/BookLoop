@@ -10,6 +10,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse, reverse_lazy
 import json
 import datetime
+import random
 
 from .models import Product, Rating, Order, OrderItem, Wishlist, ShippingAddress
 from .recommendation_engine import get_recommendations_for_user, get_similar_books
@@ -32,6 +33,46 @@ def _approved_swap_books_queryset():
         listing_type="swap",
         listing_status="approved",
     ).order_by("-pub_date")
+
+
+def _get_diverse_books(limit=10):
+    """
+    Return up to `limit` books with genre diversity.
+
+    Strategy:
+      1. Pick the single most-recent approved book from every distinct genre.
+      2. Shuffle so the order feels fresh on every page load.
+      3. If >= limit, return the first `limit` entries.
+      4. If < limit, fill remaining slots with the newest approved books
+         not already selected.
+    Uses select_related('seller') throughout to avoid N+1 queries.
+    """
+    base_qs = (
+        Product.objects.select_related("seller")
+        .filter(listing_type="sell", listing_status="approved")
+    )
+    genres = base_qs.values_list("genre", flat=True).distinct()
+
+    diverse_books = []
+    seen_ids = set()
+
+    for genre in genres:
+        book = base_qs.filter(genre=genre).order_by("-pub_date", "-id").first()
+        if book and book.id not in seen_ids:
+            diverse_books.append(book)
+            seen_ids.add(book.id)
+
+    # Randomise so homepage looks different on every load
+    random.shuffle(diverse_books)
+
+    if len(diverse_books) >= limit:
+        return diverse_books[:limit]
+
+    # Fill remaining slots with newest books not already chosen
+    needed = limit - len(diverse_books)
+    fillers = list(base_qs.exclude(id__in=seen_ids).order_by("-id")[:needed])
+    diverse_books.extend(fillers)
+    return diverse_books
 
 
 class DiscountOffersView(ListView):
@@ -176,23 +217,50 @@ def index_page(request):
     """
     cartItems = 0
     recommended_books = []
-    all_books = (
-        Product.objects.select_related("seller")
-        .filter(listing_type="sell", listing_status="approved")
-        .order_by("-id")[:10]
-    )
+    all_books = _get_diverse_books(limit=10)
+    from django.db.models import Count, Q as _Q
     featured_books = (
         Product.objects.filter(listing_type="sell", listing_status="approved")
-        .order_by("-sequence", "-id")[:4]
+        .annotate(
+            purchase_count=Count(
+                "orderitem",
+                filter=_Q(orderitem__order__complete=True),
+                distinct=True,
+            ),
+            wishlist_count=Count("wishlist", distinct=True),
+            popularity_score=(
+                Count("orderitem", filter=_Q(orderitem__order__complete=True), distinct=True)
+                + Count("wishlist", distinct=True)
+                + Count("ratings", distinct=True)
+            ),
+        )
+        .order_by("-popularity_score", "-views", "-average_rating")[:10]
     )
     nepali_books = (
         Product.objects.select_related("seller")
         .filter(
-            Q(genre__icontains="nepali") | Q(genre__icontains="nepal"),
+            Q(genre__icontains="nepali")
+            | Q(genre__icontains="nepal")
+            | Q(genre__icontains="नेपाल")
+            | Q(genre__icontains="नेपाली"),
             listing_status="approved",
             listing_type="sell",
         )
-        .order_by("-views", "-pub_date")[:8]
+        .annotate(
+            purchase_count=Count(
+                "orderitem",
+                filter=Q(orderitem__order__complete=True),
+                distinct=True,
+            ),
+            wishlist_count=Count("wishlist", distinct=True),
+            rating_count_ann=Count("ratings", distinct=True),
+            nepali_score=(
+                Count("orderitem", filter=Q(orderitem__order__complete=True), distinct=True) * 5
+                + Count("wishlist", distinct=True) * 3
+                + Count("ratings", distinct=True) * 2
+            ),
+        )
+        .order_by("-nepali_score", "-views", "-average_rating", "-pub_date")[:10]
     )
     
     if request.user.is_authenticated:

@@ -2,7 +2,7 @@
 AI recommendation engine using Groq's LLaMA3 API.
 
 Accepts lists of user-context books (purchased, cart, wishlist) plus a
-catalog slice, calls Groq, and returns up to 6 recommended book dicts.
+catalog slice, calls Groq, and returns up to 8 recommended book dicts.
 
 All network/parse failures degrade gracefully to an empty list — the
 calling view decides what to show instead.
@@ -67,12 +67,12 @@ def _build_prompt(
     if cold_start_hint:
         history_section += (
             f"\n\nCOLD-START HINT (user is new — no history yet):\n  {cold_start_hint}\n"
-            "  Recommend a diverse and popular selection of 6 books from different genres."
+            "  Recommend a diverse and popular selection of 8 books from different genres."
         )
 
     return (
         "You are a book recommendation engine for a second-hand book marketplace in Nepal.\n"
-        "A user's reading history and interests are provided below. Recommend exactly 6 books "
+        "A user's reading history and interests are provided below. Recommend exactly 8 books "
         "strictly from the AVAILABLE CATALOG list.\n\n"
         "--- USER HISTORY ---\n"
         f"{history_section}\n\n"
@@ -80,12 +80,12 @@ def _build_prompt(
         f"{catalog_lines}\n\n"
         "--- RULES ---\n"
         f"1. {exclude_note}\n"
-        "2. Recommend exactly 6 books from the catalog above.\n"
+        "2. Recommend exactly 8 books from the catalog above.\n"
         "3. Prioritize books in similar genres to the user's history (or vary genres for new users).\n"
         "4. Return ONLY a raw JSON array — no markdown fences, no explanation, no intro text.\n"
         "5. Each object must have exactly these keys:\n"
         '   {"id": <int>, "title": <str>, "author": <str>, "genre": <str>, "reason": <one sentence str>}\n'
-        "6. If fewer than 6 good matches exist, return as many as possible (minimum 1).\n"
+        "6. If fewer than 8 good matches exist, return as many as possible (minimum 1).\n"
         "7. Do not invent books or IDs — only use books from the catalog.\n"
         "8. Start your response with [ and end with ] — nothing else.\n\n"
         "Output (raw JSON array only):"
@@ -218,7 +218,7 @@ def get_recommendations(
     cold_start_hint: str = "",
 ) -> list[dict]:
     """
-    Call Groq AI and return up to 6 recommended book dicts.
+    Call Groq AI and return up to 8 recommended book dicts.
 
     Each book dict in the input lists and catalog should have:
         id (int), title (str), author (str), genre (str), price (int/float)
