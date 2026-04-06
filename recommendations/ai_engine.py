@@ -13,18 +13,15 @@ import json
 import logging
 import os
 import re
-import ssl
-import urllib.error
-import urllib.request
 
-import certifi
+import requests
 
 logger = logging.getLogger(__name__)
 
 _GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 _MODEL = "llama-3.1-8b-instant"
 _TIMEOUT = 30          # seconds — increased for slow networks
-_MAX_TOKENS = 1024
+_MAX_TOKENS = 2048     # 8 books with reasons needs ~1500 tokens; 2048 is safe
 _TEMPERATURE = 0.3
 
 
@@ -95,40 +92,29 @@ def _build_prompt(
 def _call_groq(prompt: str) -> str:
     """POST to Groq and return the raw text content string."""
     api_key = os.environ.get("GROQ_API_KEY", "").strip()
-    print(f"DEBUG: Key exists: {bool(api_key)} | length: {len(api_key)}")
     if not api_key:
         print("[GROQ] ERROR: GROQ_API_KEY is not set in environment.")
         raise ValueError("GROQ_API_KEY is not set in environment.")
 
-    print("DEBUG: Sending Request to Groq...")
+    print("[GROQ] Sending request to Groq...")
 
-    payload = json.dumps({
-        "model": _MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": _TEMPERATURE,
-        "max_tokens": _MAX_TOKENS,
-    }).encode("utf-8")
-
-    # macOS fix: urllib doesn't trust system certs — use certifi's CA bundle
-    ssl_ctx = ssl.create_default_context(cafile=certifi.where())
-
-    req = urllib.request.Request(
-        url=_GROQ_URL,
-        data=payload,
-        method="POST",
+    resp = requests.post(
+        _GROQ_URL,
+        json={
+            "model": _MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": _TEMPERATURE,
+            "max_tokens": _MAX_TOKENS,
+        },
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "Accept": "application/json",
-            # Cloudflare blocks Python-urllib's default UA; use SDK-style agent
-            "User-Agent": "groq-python/0.13.0",
         },
+        timeout=_TIMEOUT,
     )
+    resp.raise_for_status()
 
-    with urllib.request.urlopen(req, timeout=_TIMEOUT, context=ssl_ctx) as resp:
-        body = resp.read().decode("utf-8")
-
-    data = json.loads(body)
+    data = resp.json()
     content = data["choices"][0]["message"]["content"]
     print(f"[GROQ] Raw response received ({len(content)} chars):\n{content[:500]}")
     return content
@@ -243,15 +229,17 @@ def get_recommendations(
 
     try:
         raw = _call_groq(prompt)
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")
-        print(f"[GROQ] HTTP {exc.code} error. Body: {body[:500]}")
+    except requests.exceptions.HTTPError as exc:
+        print(f"[GROQ] HTTP {exc.response.status_code} error. Body: {exc.response.text[:500]}")
         return []
-    except urllib.error.URLError as exc:
-        print(f"[GROQ] Network error: {exc}")
-        return []
-    except TimeoutError:
+    except requests.exceptions.Timeout:
         print(f"[GROQ] Request timed out after {_TIMEOUT} seconds.")
+        return []
+    except requests.exceptions.ConnectionError as exc:
+        print(f"[GROQ] Network/connection error: {exc}")
+        return []
+    except requests.exceptions.RequestException as exc:
+        print(f"[GROQ] Request error: {type(exc).__name__}: {exc}")
         return []
     except (KeyError, IndexError) as exc:
         print(f"[GROQ] Unexpected response structure: {exc}")

@@ -40,7 +40,7 @@
 
 .cart-row {
   display: grid;
-  grid-template-columns: 100px 1.5fr 1fr 1fr 1fr 120px;
+  grid-template-columns: 100px 1.5fr 1fr 1fr 1fr 200px;
   gap: 14px;
   align-items: center;
   padding: 12px 0;
@@ -88,6 +88,48 @@
   .cart-row .cart-qty { grid-area: qty; }
   .cart-row .cart-total { grid-area: total; }
   .cart-row .cart-action { grid-area: action; }
+}
+
+.btn-buy-now {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: var(--bw-accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btn-buy-now:hover { background: #176f58; color: #fff; }
+
+.btn-save-wish {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: #fff;
+  color: var(--bw-ink);
+  border: 1.5px solid #e6e1d7;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.btn-save-wish:hover { border-color: #e11d48; color: #e11d48; }
+.btn-save-wish.saved { border-color: #e11d48; color: #e11d48; }
+
+.cart-action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 </style>
 
@@ -141,10 +183,26 @@
         </div>
         <div class="cart-total">Rs. {{ item.get_total }}</div>
         <div class="cart-action">
-          <form action="{% url 'remove_cart' item.Book_name.id %}" method="POST" class="d-inline">
-            {% csrf_token %}
-            <input type="submit" value="Remove" class="btn btn-danger btn-sm" />
-          </form>
+          <div class="cart-action-group">
+
+            <a href="{% url 'checkout' %}?buy_now={{ item.Book_name.id }}" class="btn-buy-now">
+              <i class="fa fa-bolt"></i> Buy Now
+            </a>
+
+            <button
+              class="btn-save-wish wish-btn"
+              data-product-id="{{ item.Book_name.id }}"
+              {% if item.Book_name in wishlist_products %}data-saved="true"{% endif %}>
+              <i class="fa fa-heart"></i>
+              <span>{% if item.Book_name in wishlist_products %}Saved{% else %}Wishlist{% endif %}</span>
+            </button>
+
+            <form action="{% url 'remove_cart' item.Book_name.id %}" method="POST">
+              {% csrf_token %}
+              <input type="submit" value="Remove" class="btn btn-danger btn-sm w-100" />
+            </form>
+
+          </div>
         </div>
       </div>
       {% empty %}
@@ -187,6 +245,42 @@
         location.reload()
       })
   }
+
+  // Wishlist buttons in cart
+  document.querySelectorAll('.wish-btn').forEach(function(btn) {
+    if (btn.dataset.saved === 'true') {
+      btn.classList.add('saved');
+    }
+
+    btn.addEventListener('click', function() {
+      var productId = this.dataset.productId;
+      var self = this;
+
+      if (typeof user !== 'undefined' && user === 'AnonymousUser') {
+        window.location.href = '/login/';
+        return;
+      }
+
+      fetch('/add-to-wishlist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrftoken,
+        },
+        body: 'product_id=' + productId,
+      })
+      .then(function(res) { return res.json(); })
+      .then(function() {
+        self.classList.add('saved');
+        self.dataset.saved = 'true';
+        self.querySelector('span').textContent = 'Saved';
+        self.querySelector('i').style.color = '#e11d48';
+      })
+      .catch(function() {
+        window.location.href = '/product/' + productId + '/';
+      });
+    });
+  });
 </script>
 
 {% include 'components/footer/footer.html' %}

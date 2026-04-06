@@ -26,41 +26,27 @@ def creatingOTP():
     return otp
 
 def sendEmail(email, first_name, last_name, otp):
-    email_message = f"""
-Dear {first_name} {last_name},
-******* This is an automated email. Please do not reply to this email.******* 
+    email_message = f"""Dear {first_name} {last_name},
 
-Your One Time Password (OTP ) is {otp}.
+******* This is an automated email. Please do not reply. *******
 
-If you have any queries, Please contact us at,
-samikisdope07@gmail.com,
-Contact (+977) 9844063085
+Your One Time Password (OTP) is: {otp}
+
+This OTP expires in 10 minutes.
+
+If you have any queries, contact us at samikisdope07@gmail.com
 
 Thanks & regards
 BookLoop - Your Online Bookstore
-Developed by: Samik Bhandari
 Kathmandu, Nepal"""
 
-    try:
-        send_mail(
-            'One Time Password',
-            email_message,
-            settings.EMAIL_HOST_USER,
-            [email],
-            fail_silently=False,
-        )
-    except Exception as e:
-        # If SSL fails, try with certifi certificates
-        import os
-        os.environ['SSL_CERT_FILE'] = certifi.where()
-        send_mail(
-            'One Time Password',
-            email_message,
-            settings.EMAIL_HOST_USER,
-            [email],
-            fail_silently=False,
-        )
-    return otp
+    send_mail(
+        'BookLoop — Your One Time Password',
+        email_message,
+        settings.EMAIL_HOST_USER,
+        [email],
+        fail_silently=False,
+    )
 
 
 
@@ -103,14 +89,22 @@ def SignUp_function(request):
                 dt.save()
                 request.session['pre_reg_id'] = dt.id
 
-                # Now try to send OTP email
+                # Try to send OTP — always redirect to /verify/ regardless of email outcome
+                email_sent = False
                 try:
                     sendEmail(email, first_name, last_name, otp)
-                    messages.success(request, f'OTP has been sent to {email}. Please check your inbox.')
+                    email_sent = True
                 except Exception as e:
-                    print(f'[Registration] Email sending failed: {e}')
-                    # Email failed, but PreRegistration is saved — show OTP directly
-                    messages.warning(request, f'Email could not be sent. Your OTP is: {otp}')
+                    print(f'[Registration] Email failed: {type(e).__name__}: {e}')
+
+                if email_sent:
+                    messages.success(request, f'OTP sent to {email}. Check your inbox (and spam folder).')
+                else:
+                    messages.warning(
+                        request,
+                        f'Could not send email automatically. Your OTP is: {otp} — '
+                        f'please copy it and enter it on the next page.'
+                    )
 
                 return HttpResponseRedirect('/verify/')
             else:

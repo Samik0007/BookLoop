@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Case, When, IntegerField, Value
+from django.db.models import Q, Case, When, IntegerField, Value, Count, F, Sum, Avg, ExpressionWrapper, DecimalField
 from django.views.generic import ListView
 from django.views.generic.edit import CreateView
 from django.views import View
@@ -218,18 +218,17 @@ def index_page(request):
     cartItems = 0
     recommended_books = []
     all_books = _get_diverse_books(limit=10)
-    from django.db.models import Count, Q as _Q
     featured_books = (
         Product.objects.filter(listing_type="sell", listing_status="approved")
         .annotate(
             purchase_count=Count(
                 "orderitem",
-                filter=_Q(orderitem__order__complete=True),
+                filter=Q(orderitem__order__complete=True),
                 distinct=True,
             ),
             wishlist_count=Count("wishlist", distinct=True),
             popularity_score=(
-                Count("orderitem", filter=_Q(orderitem__order__complete=True), distinct=True)
+                Count("orderitem", filter=Q(orderitem__order__complete=True), distinct=True)
                 + Count("wishlist", distinct=True)
                 + Count("ratings", distinct=True)
             ),
@@ -273,7 +272,6 @@ def index_page(request):
         recommended_books = get_recommendations_for_user(request.user, num_recommendations=8)
     else:
         # For anonymous users, show popular books
-        from django.db.models import Count
         recommended_books = Product.objects.annotate(
             order_count=Count('orderitem', filter=Q(orderitem__order__complete=True))
         ).order_by('-order_count')[:8]
@@ -347,6 +345,61 @@ def store(request):
         'products': products,
         'cartItems': cartItems,
         'recommended_books': recommended_books,
+    })
+
+
+def nepali_books_page(request):
+    """Dedicated page showing all Nepali genre books sorted by popularity."""
+    cartItems = 0
+    if request.user.is_authenticated:
+        order, _ = Order.objects.get_or_create(
+            user=request.user.username, complete=False
+        )
+        cartItems = order.get_cart_items
+
+    sort = request.GET.get("sort", "popular")
+
+    base_qs = (
+        Product.objects.select_related("seller")
+        .filter(
+            Q(genre__icontains="nepali")
+            | Q(genre__icontains="nepal")
+            | Q(genre__icontains="\u0928\u0947\u092a\u093e\u0932")
+            | Q(genre__icontains="\u0928\u0947\u092a\u093e\u0932\u0940"),
+            listing_status="approved",
+            listing_type="sell",
+        )
+        .annotate(
+            purchase_count=Count(
+                "orderitem",
+                filter=Q(orderitem__order__complete=True),
+                distinct=True,
+            ),
+            wishlist_count=Count("wishlist", distinct=True),
+            nepali_score=(
+                Count("orderitem", filter=Q(orderitem__order__complete=True), distinct=True) * 5
+                + Count("wishlist", distinct=True) * 3
+                + Count("ratings", distinct=True) * 2
+            ),
+        )
+    )
+
+    sort_map = {
+        "popular":    "-nepali_score",
+        "newest":     "-pub_date",
+        "price_low":  "price",
+        "price_high": "-price",
+        "rating":     "-average_rating",
+    }
+    order_field = sort_map.get(sort, "-nepali_score")
+    secondary = "-views" if sort == "popular" else "-nepali_score"
+    books = base_qs.order_by(order_field, secondary)
+
+    return render(request, "nepali_books.html", {
+        "books": books,
+        "cartItems": cartItems,
+        "current_sort": sort,
+        "total_count": base_qs.count(),
     })
 
 
@@ -434,10 +487,18 @@ def cart(request):
         items = order.orderitem_set.all()
         cartItems = order.get_cart_items
 
+    wishlist_products = []
+    if request.user.is_authenticated:
+        wishlist_ids = Wishlist.objects.filter(
+            user=request.user.username
+        ).values_list('product_id', flat=True)
+        wishlist_products = list(Product.objects.filter(id__in=wishlist_ids))
+
     return render(request, 'cart.html', {
         'items': items,
         'order': order,
-        'cartItems': cartItems
+        'cartItems': cartItems,
+        'wishlist_products': wishlist_products,
     })
 
 
@@ -445,18 +506,36 @@ def checkout(request):
     items = []
     order = None
     cartItems = 0
+    buy_now_product_id = request.GET.get('buy_now')
+    is_buy_now = False
+    buy_now_total = None
 
     if request.user.is_authenticated:
         order, _ = Order.objects.get_or_create(
             user=request.user.username, complete=False
         )
-        items = order.orderitem_set.all()
         cartItems = order.get_cart_items
+
+        if buy_now_product_id:
+            single_item = order.orderitem_set.filter(
+                Book_name_id=buy_now_product_id
+            ).first()
+            if single_item:
+                items = [single_item]
+                is_buy_now = True
+                buy_now_total = single_item.Book_name.price * single_item.quantity
+            else:
+                items = order.orderitem_set.all()
+        else:
+            items = order.orderitem_set.all()
 
     return render(request, 'checkout.html', {
         'items': items,
         'order': order,
-        'cartItems': cartItems
+        'cartItems': cartItems,
+        'is_buy_now': is_buy_now,
+        'buy_now_total': buy_now_total,
+        'buy_now_product_id': buy_now_product_id,
     })
 
 

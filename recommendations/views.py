@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 # Helpers
 # ---------------------------------------------------------------------------
 
-_FALLBACK_LIMIT = 6
+_FALLBACK_LIMIT = 8
 
 
 def _get_fallback_books() -> list[dict]:
@@ -207,7 +207,7 @@ def homepage_recommendations_api(request):
         print("[RECS] Groq returned no suggestions — using DB fallback.")
         fallback = _get_fallback_books()
         return JsonResponse({
-            "status": "fallback",
+            "status": "trending",
             "recommendations": fallback,
             "source_count": source_count,
         })
@@ -236,7 +236,7 @@ def homepage_recommendations_api(request):
         print("[RECS] All Groq IDs were invalid — using DB fallback.")
         fallback = _get_fallback_books()
         return JsonResponse({
-            "status": "fallback",
+            "status": "trending",
             "recommendations": fallback,
             "source_count": source_count,
         })

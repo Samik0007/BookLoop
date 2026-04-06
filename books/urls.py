@@ -4,6 +4,7 @@ from books import views
 urlpatterns = [
     path('', views.index_page, name="home"),
     path('store/',views.store,name="store"),
+    path('nepali-books/', views.nepali_books_page, name='nepali_books'),
     path('cart/',views.cart,name="cart"),
     path('checkout/',views.checkout,name="checkout"),
     path('product/<int:id>/',views.prod_detail,name="product"),

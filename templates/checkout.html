@@ -127,8 +127,13 @@
                 </div>
             </div>
             {% endfor %}
-            <h4>Items:   {{order.get_cart_items}}</h4>
-            <h4>Total: Rs. <span id="totalAmount">{{order.get_cart_total}}</span></h4>
+            {% if is_buy_now %}
+            <h4>Items: {{ items|length }}</h4>
+            <h4>Total: Rs. <span id="totalAmount">{{ buy_now_total }}</span></h4>
+            {% else %}
+            <h4>Items: {{ order.get_cart_items }}</h4>
+            <h4>Total: Rs. <span id="totalAmount">{{ order.get_cart_total }}</span></h4>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -139,7 +144,7 @@
 
 <script>
     var shipping = '{{Order.shipping}}'
-    var total = '{{order.get_cart_total}}'
+    var total = '{% if is_buy_now %}{{ buy_now_total }}{% else %}{{ order.get_cart_total }}{% endif %}'
     var form = document.getElementById('form')
 
     form.addEventListener('submit', function(e){

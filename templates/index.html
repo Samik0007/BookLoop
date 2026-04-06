@@ -590,6 +590,15 @@ h1, h2, h3 {
             <h2>Top Nepali Books</h2>
             <p>Beloved stories from local authors and classics.</p>
         </div>
+        <a href="{% url 'nepali_books' %}"
+           style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;
+                  border-radius:10px;font-weight:600;font-size:0.85rem;text-decoration:none;
+                  white-space:nowrap;border:2px solid var(--accent);color:var(--accent);
+                  transition:background 0.15s,color 0.15s;font-family:'Work Sans',sans-serif;"
+           onmouseover="this.style.background='var(--accent)';this.style.color='#fff'"
+           onmouseout="this.style.background='transparent';this.style.color='var(--accent)'">
+            Browse All Nepali Books &nbsp;<i class="fa fa-arrow-right"></i>
+        </a>
     </div>
     <div class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-4 justify-content-start">
         {% for book in nepali_books %}
@@ -866,12 +875,14 @@ h1, h2, h3 {
 
     var TITLES = {
         ai_success:      '\u2726 Books That Might Get Your Attention',
+        trending:        'Trending Books',
         fallback:        'Trending Books',
         unauthenticated: 'Trending Books',
         error:           'Trending Books'
     };
     var SUBS = {
-        ai_success:      'Personalised picks powered by AI \u2014 based on what you\u2019ve bought, saved & carted',
+        ai_success:      'Personalised picks powered by AI \u2014 based on what you\'ve bought, saved & carted',
+        trending:        'Popular books on BookLoop right now',
         fallback:        'Popular books picked just for you',
         unauthenticated: 'Popular books on BookLoop right now',
         error:           'Popular books on BookLoop right now'
@@ -927,38 +938,78 @@ h1, h2, h3 {
             .replace(/'/g, '&#39;');
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
-        console.log('1. [BookLoop] Fetching recommendations from /recommendations/api/homepage/ ...');
+    var FETCH_TIMEOUT_MS = 12000;
 
-        fetch('/recommendations/api/homepage/', {
+    function fetchWithTimeout(url, ms) {
+        var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        var timer = null;
+        var promise = fetch(url, {
             method: 'GET',
             credentials: 'same-origin',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(function (res) {
-            console.log('2. [BookLoop] Response received. HTTP status:', res.status, '| ok:', res.ok);
-            if (!res.ok) { throw new Error('Server returned ' + res.status); }
-            return res.json();
-        })
-        .then(function (data) {
-            console.log('3. [BookLoop] Data received:', data);
-            var status = data.status || 'fallback';
-            var recs   = data.recommendations || [];
-            console.log('4. [BookLoop] status =', status, '| recommendations count =', recs.length);
-            setHeading(status);
-            renderCards(recs);
-        })
-        .catch(function (err) {
-            console.error('[BookLoop] Fetch/parse error:', err);
-            setHeading('error');
-            grid.innerHTML = '<p style="color:var(--muted);padding:20px">Could not load recommendations right now. Check the console for details.</p>';
-        })
-        .finally(function () {
-            // GUARANTEED skeleton removal — runs on success, failure, and everything in between
-            console.log('5. [BookLoop] Fetch chain complete. Purging any leftover skeleton elements.');
-            var skeletons = grid ? grid.querySelectorAll('.btmgya-skeleton') : [];
-            Array.prototype.forEach.call(skeletons, function (el) { el.remove(); });
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            signal: controller ? controller.signal : undefined
+        }).then(function (res) {
+            clearTimeout(timer);
+            return res;
         });
+        if (controller) {
+            timer = setTimeout(function () { controller.abort(); }, ms);
+        }
+        return promise;
+    }
+
+    function showError() {
+        if (grid) {
+            grid.innerHTML =
+                '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--muted);">' +
+                '<p style="font-size:0.95rem;margin-bottom:0;">Couldn\'t load recommendations right now.</p>' +
+                '<a href="/" style="display:inline-block;margin-top:14px;padding:8px 22px;border:1.5px solid var(--accent);color:var(--accent);border-radius:10px;text-decoration:none;font-weight:600;">&#8635; Try Again</a>' +
+                '</div>';
+        }
+        setHeading('error');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        fetchWithTimeout('/recommendations/api/homepage/', FETCH_TIMEOUT_MS)
+            .then(function (res) {
+                if (!res.ok) { throw new Error('HTTP ' + res.status); }
+                return res.json();
+            })
+            .then(function (data) {
+                var status = data.status || 'trending';
+                var books  = data.recommendations || [];
+
+                if (!books.length) {
+                    // Server returned zero books — show a gentle prompt, keep section visible
+                    if (grid) {
+                        grid.innerHTML =
+                            '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--muted);">' +
+                            '<p style="font-size:0.95rem;margin-bottom:0;">Add books to your cart or wishlist to get personalised picks.</p>' +
+                            '<a href="/store/" style="display:inline-block;margin-top:14px;padding:8px 22px;background:var(--accent);color:#fff;border-radius:10px;text-decoration:none;font-weight:600;">Browse Books</a>' +
+                            '</div>';
+                    }
+                    setHeading('trending');
+                    return;
+                }
+
+                renderCards(books);
+                setHeading(status);
+
+                var s = data.source_count || {};
+                var parts = [];
+                if (s.purchased) parts.push(s.purchased + ' purchase' + (s.purchased > 1 ? 's' : ''));
+                if (s.cart)      parts.push(s.cart + ' cart item' + (s.cart > 1 ? 's' : ''));
+                if (s.wishlist)  parts.push(s.wishlist + ' wishlist item' + (s.wishlist > 1 ? 's' : ''));
+                if (subEl && parts.length) {
+                    subEl.textContent = 'Based on your ' + parts.join(', ');
+                } else if (subEl && status !== 'ai_success') {
+                    subEl.textContent = 'Trending picks popular with other readers';
+                }
+            })
+            .catch(function () {
+                // Timeout, network error, abort — keep section visible with retry
+                showError();
+            });
     });
 }());
 </script>

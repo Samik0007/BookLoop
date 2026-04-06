@@ -873,7 +873,7 @@ body {
       .then((response) => response.json())
       .then((data) => {
         console.log('Added to cart:', data)
-        window.location.href = '/checkout/'
+        window.location.href = '/checkout/?buy_now=' + productId
       })
   }
 
