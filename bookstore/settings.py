@@ -6,6 +6,7 @@ Core configuration for the BookLoop/Bookworld application.
 import os
 from pathlib import Path
 
+import certifi
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -13,6 +14,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from .env at project root
 load_dotenv(BASE_DIR / ".env")
+
+# macOS Python ships without trusted CA certs — point SSL to certifi's bundle
+# so SMTP (Gmail), HTTPS requests, and OAuth all verify correctly.
+os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+os.environ.setdefault("REQUESTS_CA_BUNDLE", certifi.where())
 
 
 # Quick-start development settings - unsuitable for production
@@ -212,10 +218,11 @@ CELERY_BEAT_SCHEDULE = {
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
 EMAIL_PORT = 587
-EMAIL_TIMEOUT = 10  # seconds — prevents hanging forever on SMTP failure
-EMAIL_HOST_USER = 'samikisdope07@gmail.com' 
-EMAIL_HOST_PASSWORD = 'skzabhjkdyafplys'
+EMAIL_TIMEOUT = 10
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'samikisdope07@gmail.com')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'skzabhjkdyafplys')
 
 
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')

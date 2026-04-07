@@ -1,0 +1,89 @@
+{% include "components/base/base-top.html" %}
+{% include "components/header/header.html" %}
+
+<main class="container py-5" style="min-height:70vh;">
+  <div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+
+      <div class="mb-4">
+        <a href="{% url 'bookshop_dashboard' %}" class="text-muted small">
+          <i class="fa fa-arrow-left me-1"></i>Back to Dashboard
+        </a>
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-header" style="background:var(--ink);color:#fff;">
+          <h5 class="mb-0"><i class="fa fa-plus-circle me-2"></i>Submit a New Book</h5>
+          <small class="text-white-50">Your book will be reviewed by admin before going live.</small>
+        </div>
+        <div class="card-body p-4">
+
+          {% if messages %}
+            {% for msg in messages %}
+              <div class="alert alert-{{ msg.tags|default:'danger' }} py-2">{{ msg }}</div>
+            {% endfor %}
+          {% endif %}
+
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Book Title <span class="text-danger">*</span></label>
+              {{ form.Book_name }}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Author <span class="text-danger">*</span></label>
+              {{ form.Author }}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Genre / Subject <span class="text-danger">*</span></label>
+              {{ form.genre }}
+              <div class="form-text">e.g. Fiction, Academic — Computing, Self-Help</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Description</label>
+              {{ form.description }}
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold">Price (Rs) <span class="text-danger">*</span></label>
+                {{ form.price }}
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold">Quantity <span class="text-danger">*</span></label>
+                {{ form.quantity }}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Condition</label>
+              {{ form.condition }}
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Cover Image</label>
+              {{ form.image }}
+            </div>
+
+            <div class="alert alert-info py-2 small">
+              <i class="fa fa-info-circle me-1"></i>
+              After submission your book will show as <strong>Pending</strong> until an admin approves it.
+            </div>
+
+            <button type="submit" class="btn w-100 py-2" style="background:var(--accent);color:#fff;font-size:1rem;">
+              <i class="fa fa-paper-plane me-1"></i>Submit for Review
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+{% include "components/footer/footer.html" %}
+{% include "components/base/base-bottom.html" %}

@@ -64,11 +64,11 @@ def _pick_best_google_image_link(image_links: dict) -> str | None:
 # -------------------------
 
 ORDER_STATUS = (
-    ("Order Received", "Order Received"),
-    ("Order Processing", "Order Processing"),
-    ("On the way", "On the way"),
-    ("Order Completed", "Order Completed"),
-    ("Order Canceled", "Order Canceled"),
+    ("Order Pending",    "Order Pending"),
+    ("Order Dispatched", "Order Dispatched"),
+    ("Order On the Way", "Order On the Way"),
+    ("Order Received",   "Order Received"),
+    ("Order Canceled",   "Order Canceled"),
 )
 
 METHOD = (
@@ -294,6 +294,22 @@ class Product(models.Model):
         return round(Decimal(self.price) * Decimal("0.90"), 2)
 
 
+class PendingBookManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(listing_status="pending", listing_type="sell")
+
+
+class PendingBook(Product):
+    """Proxy model that surfaces only sell-pending books in the Django admin sidebar."""
+
+    objects = PendingBookManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = "Pending Book Approval"
+        verbose_name_plural = "⏳ Pending Book Approvals"
+
+
 class Rating(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     book = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="ratings")
@@ -328,7 +344,7 @@ class Order(models.Model):
     date_ordered = models.DateTimeField(auto_now_add=True)
     complete = models.BooleanField(default=False)
     payment_method = models.CharField(max_length=20, choices=METHOD, default="Cash On Delivery")
-    order_status = models.CharField(max_length=50, choices=ORDER_STATUS, default="Order Received")
+    order_status = models.CharField(max_length=50, choices=ORDER_STATUS, default="Order Pending")
     transaction_id = models.CharField(max_length=200, null=True)
 
     def __str__(self):
@@ -343,6 +359,24 @@ class Order(models.Model):
     def get_cart_items(self):
         items = self.orderitem_set.all()
         return sum([item.quantity for item in items])
+
+    def get_status_step(self):
+        """Returns 1-4 for the progress stepper (Canceled or unknown = 0)."""
+        return {
+            "Order Pending":    1,
+            "Order Dispatched": 2,
+            "Order On the Way": 3,
+            "Order Received":   4,
+        }.get(self.order_status, 0)
+
+    def get_book_titles(self):
+        """Return comma-joined book titles for this order."""
+        titles = [
+            item.Book_name.Book_name
+            for item in self.orderitem_set.select_related("Book_name").all()
+            if item.Book_name
+        ]
+        return ", ".join(titles) if titles else "—"
 
 
 class OrderItem(models.Model):

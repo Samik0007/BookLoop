@@ -202,6 +202,9 @@
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="fa fa-user"></i> Profile</a></li>
               <li><a class="dropdown-item" href="{% url 'wishlist' %}"><i class="fa fa-heart"></i> Wishlist</a></li>
+              {% with profile=request.user.profile %}{% if profile.is_bookshop_owner %}
+              <li><a class="dropdown-item" href="{% url 'bookshop_dashboard' %}"><i class="fa fa-store"></i> My Bookshop</a></li>
+              {% endif %}{% endwith %}
               <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="fa fa-sign-out"></i> Logout</a></li>
             </ul>
           </div>

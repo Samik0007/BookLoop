@@ -14,6 +14,7 @@ from django.utils.html import format_html
 from .models import (  # noqa: F401
     Order,
     OrderItem,
+    PendingBook,
     Product,
     ShippingAddress,
     UserBehavior,
@@ -22,10 +23,36 @@ from .models import (  # noqa: F401
 )
 
 
-admin.site.register(Order)
-admin.site.register(OrderItem)
 admin.site.register(ShippingAddress)
 admin.site.register(Wishlist)
+
+
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
+    readonly_fields = ('Book_name', 'quantity', 'get_total')
+    can_delete = False
+
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'order_status', 'cart_total', 'date_ordered', 'complete')
+    list_filter  = ('order_status', 'complete', 'date_ordered')
+    list_editable = ('order_status',)
+    search_fields = ('user', 'transaction_id')
+    ordering      = ('-date_ordered',)
+    inlines       = [OrderItemInline]
+    readonly_fields = ('date_ordered', 'transaction_id')
+
+    @admin.display(description='Total')
+    def cart_total(self, obj):
+        return f'Rs. {obj.get_cart_total}'
+
+
+@admin.register(OrderItem)
+class OrderItemAdmin(admin.ModelAdmin):
+    list_display = ('id', 'order', 'Book_name', 'quantity')
+    list_select_related = ('order', 'Book_name')
 
 
 try:
@@ -167,5 +194,99 @@ class UserGenrePreferenceAdmin(admin.ModelAdmin):
     list_display = ('user', 'last_updated')
     search_fields = ('user',)
     readonly_fields = ('last_updated',)
+
+
+# ── Pending-approval queue ────────────────────────────────────────────────────
+@admin.register(PendingBook)
+class PendingBookAdmin(admin.ModelAdmin):
+    """Focused admin view: only sell-type books awaiting approval.
+
+    Appears as '⏳ Pending Book Approvals' in the admin sidebar so it
+    is impossible to miss. Each row has one-click Approve / Reject.
+    """
+
+    list_display = ('Book_name', 'Author', 'genre', 'price', 'seller_name', 'submitted_at', 'quick_actions')
+    search_fields = ('Book_name', 'Author', 'seller__username')
+    ordering = ('-pub_date',)
+    list_select_related = ('seller',)
+    # No add permission — books come in only via the bookshop form
+    def has_add_permission(self, request):
+        return False
+
+    @admin.display(description='Seller', ordering='seller__username')
+    def seller_name(self, obj):
+        return obj.seller.username if obj.seller else '—'
+
+    @admin.display(description='Submitted', ordering='pub_date')
+    def submitted_at(self, obj):
+        return obj.pub_date
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                '<path:object_id>/approve/',
+                self.admin_site.admin_view(self._approve),
+                name='books_pendingbook_approve',
+            ),
+            path(
+                '<path:object_id>/reject/',
+                self.admin_site.admin_view(self._reject),
+                name='books_pendingbook_reject',
+            ),
+        ]
+        return custom_urls + urls
+
+    @admin.display(description='Actions')
+    def quick_actions(self, obj):
+        approve_url = reverse('admin:books_pendingbook_approve', args=[obj.pk])
+        reject_url  = reverse('admin:books_pendingbook_reject',  args=[obj.pk])
+        return format_html(
+            '<a class="button" style="background:#28a745;color:#fff;padding:3px 10px;border-radius:4px;" href="{}">✓ Approve</a>&nbsp;'
+            '<a class="deletelink" style="padding:3px 10px;border-radius:4px;" href="{}">✗ Reject</a>',
+            approve_url, reject_url,
+        )
+
+    def _approve(self, request, object_id, *args, **kwargs):
+        book = get_object_or_404(Product, pk=object_id)
+        if not self.has_change_permission(request, book):
+            raise PermissionDenied
+        Product.objects.filter(pk=book.pk).update(listing_status='approved')
+        self.message_user(request, f'✓ Approved "{book.Book_name}" — now live in the store.', messages.SUCCESS)
+        return redirect('admin:books_pendingbook_changelist')
+
+    def _reject(self, request, object_id, *args, **kwargs):
+        book = get_object_or_404(Product, pk=object_id)
+        if not self.has_change_permission(request, book):
+            raise PermissionDenied
+        Product.objects.filter(pk=book.pk).update(listing_status='rejected')
+        self.message_user(request, f'✗ Rejected "{book.Book_name}".', messages.WARNING)
+        return redirect('admin:books_pendingbook_changelist')
+
+
+# ── Bookshop feature ────────────────────────────────────────────────────────
+from authentication.models import UserProfile, BookshopProfile  # noqa: E402
+
+
+@admin.register(BookshopProfile)
+class BookshopProfileAdmin(admin.ModelAdmin):
+    list_display = ('shop_name', 'user', 'location', 'is_verified', 'created_at')
+    list_filter = ('is_verified',)
+    search_fields = ('shop_name', 'user__username', 'location')
+    actions = ('verify_shops',)
+    readonly_fields = ('created_at',)
+
+    def verify_shops(self, request, queryset):
+        count = queryset.update(is_verified=True)
+        self.message_user(request, f'Verified {count} bookshop(s).')
+    verify_shops.short_description = 'Mark selected bookshops as verified'
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'role', 'created_at')
+    list_filter = ('role',)
+    search_fields = ('user__username',)
+    readonly_fields = ('created_at',)
 
 

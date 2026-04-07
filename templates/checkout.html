@@ -197,11 +197,50 @@
             body:JSON.stringify({'form': userFormData,'shipping':shippingInfo}),
         })
         .then(() => {
-            // Show alert box when payment is completed
-            alert("Your payment has been completed! Our customer service will contact you soon :)");
-            // Redirect user to store page when "OK" button is clicked on the alert box
-            window.location.href = "{% url 'order' %}";
+            // Show a polished confirmation toast, then redirect to Order History
+            showOrderConfirmation();
         })
+    }
+
+    function showOrderConfirmation() {
+        // Inject toast markup once
+        if (!document.getElementById('bw-order-toast')) {
+            document.body.insertAdjacentHTML('beforeend', `
+                <div id="bw-order-toast"
+                     style="
+                        position:fixed; bottom:32px; left:50%; transform:translateX(-50%);
+                        background:#0b1f2a; color:#fff;
+                        padding:16px 28px; border-radius:14px;
+                        box-shadow:0 12px 40px rgba(0,0,0,.25);
+                        display:flex; align-items:center; gap:14px;
+                        font-family:'Work Sans',sans-serif; font-size:15px;
+                        z-index:99999; opacity:0;
+                        transition:opacity .35s ease, transform .35s ease;
+                     ">
+                  <span style="font-size:22px;">🎉</span>
+                  <div>
+                    <div style="font-weight:700;margin-bottom:2px;">Order placed successfully!</div>
+                    <div style="font-size:13px;opacity:.75;">We received your order. Thank you for choosing BookLoop!</div>
+                  </div>
+                </div>
+            `);
+        }
+
+        const toast = document.getElementById('bw-order-toast');
+        // Fade in
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+        });
+
+        // After 2.8 s, fade out then redirect to order history
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(-50%) translateY(12px)';
+            setTimeout(() => {
+                window.location.href = "{% url 'order' %}";
+            }, 380);
+        }, 2800);
     }
 </script>
 

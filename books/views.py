@@ -697,13 +697,16 @@ def search(request):
 
 @login_required
 def orders(request):
+    # Only show completed orders (complete=True) — these are real placed orders.
+    # complete=False means an active cart, not a submitted order.
     orders = Order.objects.filter(
-        user=request.user.username
+        user=request.user.username,
+        complete=True,
     ).exclude(order_status='Order Canceled').order_by('-date_ordered')
 
     return render(request, 'orders.html', {
         'orders': orders,
-        'allowed_cancel_statuses': ['Order Received', 'Order Processing', 'On the way']
+        'allowed_cancel_statuses': ['Order Pending', 'Order Dispatched'],
     })
 
 
@@ -724,7 +727,7 @@ def delete_order(request, order_id):
         ShippingAddress.objects.filter(order=order).delete()
 
         messages.success(request, 'Order canceled successfully')
-        return redirect('orders')
+        return redirect('order')
 
     return render(request, 'order.html', {'order': order})
 
@@ -742,30 +745,35 @@ def ProcessOrder(request):
             user=request.user.username, complete=False
         )
 
-        total = float(data['form']['total'])
         order.transaction_id = transaction_id
-
-        if total == order.get_cart_total:
-            order.complete = True
-
+        # Always mark complete on payment confirmation.
+        # The old total == get_cart_total check was unreliable:
+        # Buy Now sends a single-item price; get_cart_total returns the
+        # full cart — they never matched, so orders were never completed.
+        order.complete = True
+        order.order_status = 'Order Pending'
         order.save()
-        
+
         # Track purchases for AI recommendations
         session_id = request.session.session_key
         for item in order.orderitem_set.all():
             if item.Book_name:
                 track_purchase(request.user, item.Book_name, session_id)
 
-        if not order.shipping:
-            ShippingAddress.objects.create(
-                user=request.user.username,
-                order=order,
-                address=data['shipping']['address'],
-                city=data['shipping']['city'],
-                ward_no=data['shipping']['ward_no'],
-                email=data['shipping'].get('email') or data['shipping'].get('zip_code'),
-                phone=data['shipping']['phone'],
-            )
+        # Save shipping address only if one hasn't been recorded yet
+        shipping_exists = ShippingAddress.objects.filter(order=order).exists()
+        if not shipping_exists:
+            shipping = data.get('shipping', {})
+            if shipping.get('address'):
+                ShippingAddress.objects.create(
+                    user=request.user.username,
+                    order=order,
+                    address=shipping.get('address', ''),
+                    city=shipping.get('city', 'Kathmandu'),
+                    ward_no=shipping.get('ward_no', 0),
+                    email=shipping.get('email') or shipping.get('zip_code', ''),
+                    phone=shipping.get('phone', 0),
+                )
 
     return JsonResponse('Order processed', safe=False)
 

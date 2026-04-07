@@ -2,103 +2,314 @@
 {% include 'components/base/base-top.html' %}
 {% include 'components/header/header.html' %}
 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.3/css/all.css">
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
 :root {
-  --bw-ink: #0b1f2a;
-  --bw-muted: #52616b;
-  --bw-accent: #1f8a70;
-  --bw-accent-2: #f28f3b;
+  --ink: #0b1f2a; --muted: #52616b; --accent: #1f8a70;
+  --accent-2: #f28f3b; --paper: #f7f3eb;
 }
-
-.orders-hero {
-  padding: 30px 0 20px;
+body {
+  font-family: 'Work Sans', sans-serif;
+  color: var(--ink);
+  background: radial-gradient(circle at 10% 5%, #f7f3eb 0%, #fff 35%, #f1f6f4 100%);
 }
+h1,h2,h3 { font-family: 'Merriweather', serif; }
 
-.orders-title {
-  font-family: 'Merriweather', serif;
-  font-size: 28px;
-  margin-bottom: 6px;
-}
-
-.orders-table {
-  background: #ffffff;
+/* ── Order card ─────────────────────────────────── */
+.order-card {
+  background: #fff;
   border-radius: 18px;
   border: 1px solid #efe8da;
-  box-shadow: 0 10px 25px rgba(27, 27, 31, 0.08);
-  padding: 18px;
+  box-shadow: 0 8px 25px rgba(27,27,31,.08);
+  margin-bottom: 22px;
+  overflow: hidden;
 }
+.order-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  background: #f9f6f1;
+  border-bottom: 1px solid #efe8da;
+  gap: 10px;
+}
+.order-id   { font-weight: 700; font-size:.92rem; color:var(--ink); }
+.order-date { font-size:.78rem; color:var(--muted); margin-top:1px; }
+.order-total { font-weight:700; color:var(--accent); font-size:.95rem; }
 
-.status-pill {
-  padding: 4px 10px;
+/* ── Status badges ──────────────────────────────── */
+.status-badge {
+  padding: 4px 13px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: .72rem;
   font-weight: 700;
+  letter-spacing: .04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.s-pending    { background:#fef3c7; color:#92400e; }
+.s-dispatched { background:#e0f2fe; color:#0369a1; }
+.s-onway      { background:#ede9fe; color:#5b21b6; }
+.s-received   { background:#dcfce7; color:#166534; }
+.s-canceled   { background:#fee2e2; color:#991b1b; }
+
+/* ── Progress stepper ───────────────────────────── */
+.tracker-wrap {
+  padding: 22px 28px 18px;
+}
+.tracker {
+  display: flex;
+  align-items: flex-start;
+}
+.step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+/* connector line */
+.step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 15px; left: 50%; width: 100%;
+  height: 3px;
+  background: #e5e7eb;
+  z-index: 0;
+  transition: background .35s;
+}
+.step.done:not(:last-child)::after   { background: var(--accent); }
+.step.active:not(:last-child)::after { background: linear-gradient(90deg, var(--accent) 0%, #e5e7eb 100%); }
+
+/* icon circle */
+.step-icon {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .78rem;
+  z-index: 1;
+  border: 2.5px solid #e5e7eb;
+  background: #fff;
+  color: #9ca3af;
+  transition: all .3s;
+}
+.step.done .step-icon {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.step.active .step-icon {
+  background: var(--accent-2);
+  border-color: var(--accent-2);
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(242,143,59,.18);
 }
 
-.status-green { background: #dcfce7; color: #166534; }
-.status-yellow { background: #fef3c7; color: #92400e; }
-.status-red { background: #fee2e2; color: #991b1b; }
+/* labels */
+.step-label {
+  font-size: .67rem;
+  font-weight: 600;
+  margin-top: 7px;
+  text-align: center;
+  color: #9ca3af;
+  line-height: 1.3;
+}
+.step.done   .step-label { color: var(--accent); }
+.step.active .step-label { color: var(--accent-2); font-weight:700; }
+
+/* ── Books list ─────────────────────────────────── */
+.order-books {
+  padding: 12px 22px 18px;
+  border-top: 1px solid #f3ede3;
+}
+.order-books-label {
+  font-size: .73rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.book-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--paper);
+  border: 1px solid #e8e2d7;
+  border-radius: 8px;
+  padding: 4px 11px;
+  font-size: .79rem;
+  font-weight: 500;
+  margin: 3px 3px 3px 0;
+}
+
+/* ── Cancel button ──────────────────────────────── */
+.btn-cancel {
+  font-size: .75rem;
+  padding: 4px 13px;
+  border-radius: 8px;
+  border: 1.5px solid #fca5a5;
+  color: #dc2626;
+  background: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.btn-cancel:hover { background:#dc2626; color:#fff; }
+
+/* ── Empty state ────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 70px 20px;
+  color: var(--muted);
+}
+.empty-state .big-icon { font-size: 3rem; margin-bottom: 16px; }
+.empty-state a {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 10px 28px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* ── Canceled note ──────────────────────────────── */
+.canceled-row {
+  padding: 10px 22px 14px;
+  font-size: .83rem;
+  color: #991b1b;
+  background: #fff5f5;
+  border-top: 1px solid #fecaca;
+}
 </style>
 
-<section class="orders-hero">
-  <div class="container">
-    <div class="orders-title">My Orders</div>
-    <p class="text-muted">Track your purchases and manage active orders.</p>
+<section style="padding:34px 0 64px;">
+  <div class="container" style="max-width:820px;">
 
-    <div class="orders-table">
-      {% if orders %}
-      <div class="table-responsive">
-        <table class="table table-hover align-middle">
-          <thead>
-            <tr>
-              <th>Order ID</th>
-              <th>Book</th>
-              <th>Date</th>
-              <th>Total</th>
-              <th>Status</th>
-              {% if not request.user.is_staff %}
-              <th>Action</th>
-              {% endif %}
-            </tr>
-          </thead>
-          <tbody>
-          {% for order in orders %}
-            <tr>
-              <td>{{ order.id }}</td>
-              <td>{{ order.book.Book_name }}</td>
-              <td>{{ order.date_ordered }}</td>
-              <td>Rs. {{ order.get_cart_total }}</td>
-              <td>
-                {% if order.order_status == "Order Canceled" %}
-                  <span class="status-pill status-red">{{ order.order_status }}</span>
-                {% elif order.order_status == "Order Processing" %}
-                  <span class="status-pill status-yellow">{{ order.order_status }}</span>
-                {% else %}
-                  <span class="status-pill status-green">{{ order.order_status }}</span>
-                {% endif %}
-              </td>
-              {% if not request.user.is_staff %}
-              <td>
-                {% if order.order_status in allowed_cancel_statuses %}
-                <form action="{% url 'delete_order' order.id %}" method="post">
-                  {% csrf_token %}
-                  <input type="hidden" name="order_id" value="{{ order.id }}">
-                  <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to cancel this order?')">Cancel</button>
-                </form>
-                {% else %}
-                <span class="text-muted">--</span>
-                {% endif %}
-              </td>
-              {% endif %}
-            </tr>
+    <h2 style="font-family:'Merriweather',serif;font-size:26px;margin-bottom:4px;">My Orders</h2>
+    <p style="color:var(--muted);margin-bottom:26px;">Track your purchases and manage active orders.</p>
+
+    {% if orders %}
+      {% for order in orders %}
+      <div class="order-card">
+
+        <!-- ── Header ────────────────────────────── -->
+        <div class="order-card-header">
+          <div>
+            <div class="order-id">Order #{{ order.id }}</div>
+            <div class="order-date">{{ order.date_ordered|date:"F j, Y  ·  g:i a" }}</div>
+          </div>
+
+          <div class="order-total">Rs. {{ order.get_cart_total }}</div>
+
+          <div>
+            {% if order.order_status == "Order Pending" %}
+              <span class="status-badge s-pending">
+                <i class="fas fa-clock" style="font-size:.65rem;"></i> Pending
+              </span>
+            {% elif order.order_status == "Order Dispatched" %}
+              <span class="status-badge s-dispatched">
+                <i class="fas fa-box-open" style="font-size:.65rem;"></i> Dispatched
+              </span>
+            {% elif order.order_status == "Order On the Way" %}
+              <span class="status-badge s-onway">
+                <i class="fas fa-truck" style="font-size:.65rem;"></i> On the Way
+              </span>
+            {% elif order.order_status == "Order Received" %}
+              <span class="status-badge s-received">
+                <i class="fas fa-check-circle" style="font-size:.65rem;"></i> Delivered
+              </span>
+            {% elif order.order_status == "Order Canceled" %}
+              <span class="status-badge s-canceled">
+                <i class="fas fa-times-circle" style="font-size:.65rem;"></i> Canceled
+              </span>
+            {% endif %}
+          </div>
+
+          {% if order.order_status in allowed_cancel_statuses %}
+          <form action="{% url 'delete_order' order.id %}" method="post" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" class="btn-cancel"
+              onclick="return confirm('Are you sure you want to cancel Order #{{ order.id }}?')">
+              Cancel Order
+            </button>
+          </form>
+          {% endif %}
+        </div>
+
+        <!-- ── Progress stepper (skip if canceled) ── -->
+        {% if order.order_status != "Order Canceled" %}
+        {% with step=order.get_status_step %}
+        <div class="tracker-wrap">
+          <div class="tracker">
+
+            <!-- Step 1 — Pending -->
+            <div class="step {% if step > 1 %}done{% elif step == 1 %}active{% endif %}">
+              <div class="step-icon"><i class="fas fa-receipt"></i></div>
+              <div class="step-label">Order<br>Pending</div>
+            </div>
+
+            <!-- Step 2 — Dispatched -->
+            <div class="step {% if step > 2 %}done{% elif step == 2 %}active{% endif %}">
+              <div class="step-icon"><i class="fas fa-box-open"></i></div>
+              <div class="step-label">Dispatched</div>
+            </div>
+
+            <!-- Step 3 — On the Way -->
+            <div class="step {% if step > 3 %}done{% elif step == 3 %}active{% endif %}">
+              <div class="step-icon"><i class="fas fa-truck"></i></div>
+              <div class="step-label">On the<br>Way</div>
+            </div>
+
+            <!-- Step 4 — Received -->
+            <div class="step {% if step == 4 %}done active{% endif %}">
+              <div class="step-icon"><i class="fas fa-home"></i></div>
+              <div class="step-label">Received</div>
+            </div>
+
+          </div>
+        </div>
+        {% endwith %}
+        {% else %}
+        <div class="canceled-row">
+          <i class="fas fa-ban me-1"></i> This order was canceled and is no longer active.
+        </div>
+        {% endif %}
+
+        <!-- ── Books in this order ─────────────────── -->
+        <div class="order-books">
+          <div class="order-books-label">Books in this order</div>
+          {% for item in order.orderitem_set.all %}
+            {% if item.Book_name %}
+            <span class="book-pill">
+              <i class="fas fa-book" style="color:var(--accent);font-size:.7rem;"></i>
+              {{ item.Book_name.Book_name }}
+              <span style="color:var(--muted);">× {{ item.quantity }}</span>
+            </span>
+            {% endif %}
+          {% empty %}
+            <span style="color:var(--muted);font-size:.82rem;">No items found.</span>
           {% endfor %}
-          </tbody>
-        </table>
+        </div>
+
       </div>
-      {% else %}
-        <p>You haven't made any orders yet.</p>
-      {% endif %}
-    </div>
+      {% endfor %}
+
+    {% else %}
+      <div class="empty-state">
+        <div class="big-icon">📦</div>
+        <p>You haven't placed any orders yet.</p>
+        <a href="{% url 'store' %}">Browse Books</a>
+      </div>
+    {% endif %}
+
   </div>
 </section>
 

@@ -1,8 +1,27 @@
 # forms.py
 from django import forms
 
-from .models import Product
-from .models import ShippingAddress
+from .models import Product, ShippingAddress
+
+
+class BookshopProductForm(forms.ModelForm):
+    """Form for bookshop owners to submit a new book listing for admin approval."""
+
+    class Meta:
+        model = Product
+        fields = [
+            'Book_name', 'Author', 'genre', 'description',
+            'price', 'quantity', 'condition', 'image',
+        ]
+        widgets = {
+            'Book_name':   forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Book title'}),
+            'Author':      forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Author name'}),
+            'genre':       forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Fiction, Academic, Self-Help'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'price':       forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'quantity':    forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'condition':   forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Good, Like New'}),
+        }
 
 
 class BookSearchForm(forms.Form):

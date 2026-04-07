@@ -1,0 +1,167 @@
+{% include "components/base/base-top.html" %}
+{% include "components/header/header.html" %}
+
+<main class="container py-5" style="min-height:70vh;">
+
+  {# ── Verification status banner ── #}
+  {% if bookshop.is_verified %}
+  <div class="alert border-0 mb-4 d-flex align-items-center gap-2 py-2 px-3"
+       style="background:#d1fae5;color:#065f46;border-radius:8px;">
+    <i class="fa fa-check-circle fa-lg"></i>
+    <span><strong>Verified shop</strong> — your books go <strong>live in the store immediately</strong> after you submit them.</span>
+  </div>
+  {% else %}
+  <div class="alert border-0 mb-4 d-flex align-items-center gap-2 py-2 px-3"
+       style="background:#fef3c7;color:#92400e;border-radius:8px;">
+    <i class="fa fa-exclamation-triangle fa-lg"></i>
+    <span><strong>Shop not yet verified.</strong>  Submitted books wait for admin approval before going live.
+      Ask a site admin to verify your shop for instant publishing.</span>
+  </div>
+  {% endif %}
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags|default:'info' }} py-2">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row g-4">
+
+    <!-- Sidebar: Shop Info -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header" style="background:var(--accent);color:#fff;">
+          <h5 class="mb-0"><i class="fa fa-store me-2"></i>{{ bookshop.shop_name }}</h5>
+          {% if bookshop.is_verified %}
+            <small><i class="fa fa-check-circle"></i> Verified</small>
+          {% else %}
+            <small style="opacity:.85;"><i class="fa fa-clock-o"></i> Pending verification</small>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          <p><i class="fa fa-map-marker me-1 text-muted"></i> {{ bookshop.location|default:"—" }}</p>
+          <p><i class="fa fa-phone me-1 text-muted"></i> {{ bookshop.phone|default:"—" }}</p>
+          <p class="text-muted small">{{ bookshop.description|default:"No description yet." }}</p>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="row g-2 mb-4">
+        {% if pending_count %}
+        <div class="col-4 text-center">
+          <div class="card border-0 shadow-sm py-3" style="border-left:4px solid #f59e0b!important;">
+            <div class="fw-bold fs-4" style="color:#d97706;">{{ pending_count }}</div>
+            <div class="text-muted small">Pending</div>
+          </div>
+        </div>
+        {% endif %}
+        <div class="col-4 text-center">
+          <div class="card border-0 shadow-sm py-3" style="border-left:4px solid #28a745!important;">
+            <div class="fw-bold fs-4 text-success">{{ approved_count }}</div>
+            <div class="text-muted small">Live</div>
+          </div>
+        </div>
+        <div class="col-4 text-center">
+          <div class="card border-0 shadow-sm py-3" style="border-left:4px solid #dc3545!important;">
+            <div class="fw-bold fs-4 text-danger">{{ rejected_count }}</div>
+            <div class="text-muted small">Rejected</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit shop form -->
+      <div class="card shadow-sm border-0">
+        <div class="card-header" style="background:var(--ink);color:#fff;">
+          <h6 class="mb-0"><i class="fa fa-pencil me-1"></i>Edit Shop Details</h6>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_shop">
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Shop Name</label>
+              <input type="text" name="shop_name" class="form-control form-control-sm" value="{{ bookshop.shop_name }}">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Location</label>
+              <input type="text" name="location" class="form-control form-control-sm" value="{{ bookshop.location }}">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Phone</label>
+              <input type="text" name="phone" class="form-control form-control-sm" value="{{ bookshop.phone }}">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Description</label>
+              <textarea name="description" class="form-control form-control-sm" rows="3">{{ bookshop.description }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-sm w-100" style="background:var(--accent);color:#fff;">Save Changes</button>
+          </form>
+        </div>
+      </div>
+    </div><!-- /sidebar -->
+
+    <!-- Main: Book listings -->
+    <div class="col-lg-8">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 style="color:var(--ink);">My Book Listings</h4>
+        <a href="{% url 'bookshop_add_book' %}" class="btn btn-sm" style="background:var(--accent-2);color:#fff;">
+          <i class="fa fa-plus me-1"></i>Add New Book
+        </a>
+      </div>
+
+      {% if my_books %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead style="background:var(--ink);color:#fff;">
+              <tr>
+                <th>Book</th>
+                <th>Author</th>
+                <th>Price</th>
+                <th>Qty</th>
+                <th>Status</th>
+                <th>Submitted</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for book in my_books %}
+              <tr>
+                <td>
+                  {% if book.image %}
+                    <img src="{{ book.image.url }}" alt="{{ book.Book_name }}" style="width:40px;height:50px;object-fit:cover;border-radius:4px;" class="me-2">
+                  {% endif %}
+                  <strong>{{ book.Book_name }}</strong>
+                </td>
+                <td>{{ book.Author }}</td>
+                <td>Rs {{ book.price }}</td>
+                <td>{{ book.quantity }}</td>
+                <td>
+                  {% if book.listing_status == 'approved' %}
+                    <span class="badge bg-success"><i class="fa fa-circle" style="font-size:.6em;"></i> Live</span>
+                  {% elif book.listing_status == 'pending' %}
+                    <span class="badge bg-warning text-dark"><i class="fa fa-clock-o"></i> Pending</span>
+                  {% elif book.listing_status == 'rejected' %}
+                    <span class="badge bg-danger"><i class="fa fa-times"></i> Rejected</span>
+                  {% else %}
+                    <span class="badge bg-secondary">{{ book.listing_status }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-muted small">{{ book.pub_date|date:"d M Y" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="fa fa-book fa-3x mb-3 d-block"></i>
+          <p>You haven't submitted any books yet.</p>
+          <a href="{% url 'bookshop_add_book' %}" class="btn" style="background:var(--accent);color:#fff;">Add Your First Book</a>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</main>
+
+{% include "components/footer/footer.html" %}
+{% include "components/base/base-bottom.html" %}
