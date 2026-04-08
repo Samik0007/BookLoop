@@ -3,110 +3,200 @@
 {% include 'components/header/header.html' %}
 
 <style>
+  /* ── Page shell ──────────────────────────────── */
   .swap-browse-page {
-    padding: 52px 0 64px;
+    padding: 52px 0 72px;
     background: radial-gradient(circle at 10% 0%, #f7f3eb 0%, #ffffff 40%, #eef6f3 100%);
   }
   .swap-browse-header h1 {
     font-family: 'Merriweather', serif;
-    font-size: 32px;
-    margin-bottom: 8px;
+    font-size: 30px;
+    margin-bottom: 6px;
+    color: #0b1f2a;
   }
-  .swap-browse-header p {
-    color: #52616b;
-    margin-bottom: 0;
-  }
-  .swap-grid {
-    margin-top: 26px;
-  }
+  .swap-browse-header p { color: #52616b; margin-bottom: 0; }
+
+  /* ── Card ────────────────────────────────────── */
   .swap-book-card {
     border-radius: 16px;
     overflow: hidden;
-    border: 1px solid #f2ece0;
-    box-shadow: 0 10px 26px rgba(27, 27, 31, 0.08);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #efe8da;
+    box-shadow: 0 6px 22px rgba(27,27,31,.07);
+    transition: transform .2s ease, box-shadow .2s ease;
   }
   .swap-book-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 34px rgba(27, 27, 31, 0.12);
+    transform: translateY(-5px);
+    box-shadow: 0 16px 36px rgba(27,27,31,.13);
   }
+
+  /* ── Image wrapper: fixed 260px, contain so full cover shows ── */
+  .book-img-wrap {
+    height: 260px;
+    background: #f5f2ec;           /* warm neutral behind any cover */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-bottom: 1px solid #efe8da;
+  }
+  .book-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;           /* shows the full cover, no crop */
+    padding: 10px;                 /* slight breathing room */
+  }
+
+  /* ── Card body ──────────────────────────────── */
   .swap-book-card .card-body {
     display: flex;
     flex-direction: column;
+    padding: 14px 16px 16px;
   }
-  .swap-meta {
-    font-size: 13px;
+
+  /* Clamp title to 2 lines */
+  .swap-card-title {
+    font-size: .95rem;
+    font-weight: 700;
+    color: #0b1f2a;
+    line-height: 1.4;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .swap-meta { font-size: .78rem; color: #52616b; line-height: 1.6; }
+
+  /* Badge */
+  .swap-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    background: #e0f7f0;
+    color: #1f8a70;
+    border-radius: 999px;
+    padding: 3px 10px;
+    margin-bottom: 8px;
+    width: fit-content;
+  }
+
+  /* Button pinned to bottom */
+  .swap-btn {
+    margin-top: auto;
+    padding-top: 12px;
+  }
+  .swap-btn a {
+    display: block;
+    text-align: center;
+    padding: 8px 0;
+    border-radius: 10px;
+    border: 1.5px solid #1f8a70;
+    color: #1f8a70;
+    font-size: .83rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .15s, color .15s;
+  }
+  .swap-btn a:hover { background: #1f8a70; color: #fff; }
+
+  /* Empty state */
+  .swap-empty {
+    text-align: center;
+    padding: 60px 0;
     color: #52616b;
   }
-  .swap-empty-state {
-    max-width: 560px;
-    margin: 26px auto 0;
-  }
+  .swap-empty i { font-size: 2.6rem; margin-bottom: 12px; display: block; color: #c8bfaf; }
 </style>
 
 <section class="swap-browse-page">
   <div class="container">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 swap-browse-header">
+
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4 swap-browse-header">
       <div>
         <h1>Browse All Swap Listings</h1>
         <p>Find approved student listings and connect for direct academic book swaps.</p>
       </div>
-      <a href="{% url 'add_swap_book' %}" class="btn btn-success">+ Add Book to Swap</a>
+      <a href="{% url 'add_swap_book' %}" class="btn btn-success rounded-pill px-4">
+        <i class="fa fa-plus me-1"></i> Add Book to Swap
+      </a>
     </div>
 
-    <div class="swap-grid">
-      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+    <!-- Grid -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
       {% for book in books %}
-        <div class="col">
-          <div class="card h-100 shadow-sm border-0 rounded-3 swap-book-card">
-            {% if book.image and "herald" not in book.image.url|lower and "college" not in book.image.url|lower %}
-            <img src="{{ book.image.url }}" class="card-img-top" style="height: 250px; object-fit: cover;" alt="{{ book.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
+      <div class="col">
+        <div class="card h-100 border-0 swap-book-card">
+
+          <!-- Cover image -->
+          <div class="book-img-wrap">
+            {% if book.image %}
+            <img src="{{ book.image.url }}"
+                 alt="{{ book.Book_name }}"
+                 onerror="this.src='{% static 'images/default_cover.jpg' %}'">
             {% else %}
-            <img src="{% static 'images/default_cover.jpg' %}" class="card-img-top" style="height: 250px; object-fit: cover;" alt="{{ book.Book_name }}">
+            <img src="{% static 'images/default_cover.jpg' %}" alt="{{ book.Book_name }}">
             {% endif %}
-            <div class="card-body">
-              <span class="badge bg-info text-dark mb-2"><i class="fa fa-exchange"></i> Available for Swap</span>
-              <h5 class="card-title mb-2">{{ book.Book_name|truncatewords:6 }}</h5>
-              <p class="card-text small text-muted mb-1">Owner: {{ book.seller.username|default:"BookLoop User" }}</p>
-              <p class="card-text small text-muted mb-1">Location: {{ book.location|default:"Not specified" }}</p>
-              <p class="card-text small text-muted mb-0">Looking for: {{ book.swap_preference|default:"Open to offers"|truncatechars:45 }}</p>
+          </div>
+
+          <!-- Body -->
+          <div class="card-body">
+            <div class="swap-pill">
+              <i class="fa fa-exchange" style="font-size:.6rem;"></i> Available for Swap
             </div>
-            <div class="card-footer bg-white border-0 pt-0 pb-3">
-              <a href="{% url 'product' book.id %}" class="btn btn-outline-success w-100">View Details</a>
+            <div class="swap-card-title">{{ book.Book_name }}</div>
+            <div class="swap-meta">
+              <div><i class="fa fa-user-o me-1"></i>{{ book.seller.username|default:"BookLoop User" }}</div>
+              <div><i class="fa fa-map-marker me-1"></i>{{ book.location|default:"Location not set" }}</div>
+              <div class="mt-1" style="font-size:.73rem;">
+                <span style="color:#0b1f2a;font-weight:600;">Looking for:</span>
+                {{ book.swap_preference|default:"Open to offers"|truncatechars:48 }}
+              </div>
+            </div>
+            <div class="swap-btn">
+              <a href="{% url 'product' book.id %}">View Details</a>
             </div>
           </div>
+
         </div>
-      {% empty %}
-        <div class="col-12">
-          <div class="alert alert-light border text-center swap-empty-state" role="alert">
-            No approved swap listings available right now.
-          </div>
-        </div>
-      {% endfor %}
       </div>
+      {% empty %}
+      <div class="col-12">
+        <div class="swap-empty">
+          <i class="fa fa-book"></i>
+          <p>No approved swap listings right now.<br>
+            <a href="{% url 'add_swap_book' %}" style="color:#1f8a70;font-weight:600;">Be the first to add one →</a>
+          </p>
+        </div>
+      </div>
+      {% endfor %}
     </div>
 
+    <!-- Pagination -->
     {% if is_paginated %}
-      <nav class="mt-4" aria-label="Swap listing pagination">
-        <ul class="pagination justify-content-center">
-          {% if page_obj.has_previous %}
-            <li class="page-item">
-              <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
-            </li>
-          {% endif %}
-
-          <li class="page-item disabled">
-            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    <nav class="mt-5" aria-label="Swap listing pagination">
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
           </li>
-
-          {% if page_obj.has_next %}
-            <li class="page-item">
-              <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
-            </li>
-          {% endif %}
-        </ul>
-      </nav>
+        {% endif %}
+        <li class="page-item disabled">
+          <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
     {% endif %}
+
   </div>
 </section>
 

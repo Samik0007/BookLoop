@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from cloudinary.models import CloudinaryField
 
 
 class PreRegistration(models.Model):
@@ -23,6 +24,7 @@ class UserProfile(models.Model):
     )
     user       = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role       = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_STUDENT)
+    avatar     = CloudinaryField('avatar', folder='bookloop_avatars', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -31,6 +33,13 @@ class UserProfile(models.Model):
     @property
     def is_bookshop_owner(self):
         return self.role == self.ROLE_BOOKSHOP
+
+    @property
+    def avatar_url(self):
+        try:
+            return self.avatar.url if self.avatar else None
+        except Exception:
+            return None
 
 
 class BookshopProfile(models.Model):

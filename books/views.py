@@ -295,32 +295,36 @@ def about(request):
     return render(request, 'about.html', {"total_books": total_books})
 
 
+@login_required
 def profile(request):
-    cartItems = 0
-    items = []
-    orders = []
-    wishlist_count = 0
-    total_spent = 0
-    recent_orders = []
+    from authentication.models import UserProfile
 
-    if request.user.is_authenticated:
-        order, _ = Order.objects.get_or_create(
-            user=request.user.username, complete=False
-        )
-        items = order.orderitem_set.all()
-        cartItems = order.get_cart_items
-        orders = Order.objects.filter(user=request.user.username).order_by('-date_ordered')
-        wishlist_count = Wishlist.objects.filter(user=request.user.username).count()
-        total_spent = sum([o.get_cart_total for o in orders.filter(complete=True)])
-        recent_orders = orders[:5]
+    order, _ = Order.objects.get_or_create(
+        user=request.user.username, complete=False
+    )
+    items         = order.orderitem_set.all()
+    cartItems     = order.get_cart_items
+    orders        = Order.objects.filter(user=request.user.username).order_by('-date_ordered')
+    wishlist_count = Wishlist.objects.filter(user=request.user.username).count()
+    total_spent   = sum([o.get_cart_total for o in orders.filter(complete=True)])
+    recent_orders = orders[:5]
+
+    user_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST' and request.FILES.get('avatar'):
+        user_profile.avatar = request.FILES['avatar']
+        user_profile.save()
+        messages.success(request, 'Profile picture updated!')
+        return redirect('profile')
 
     return render(request, 'profile.html', {
-        'items': items,
-        'cartItems': cartItems,
-        'orders': orders,
+        'items':          items,
+        'cartItems':      cartItems,
+        'orders':         orders,
         'wishlist_count': wishlist_count,
-        'total_spent': total_spent,
-        'recent_orders': recent_orders
+        'total_spent':    total_spent,
+        'recent_orders':  recent_orders,
+        'user_profile':   user_profile,
     })
 
 

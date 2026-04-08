@@ -120,6 +120,43 @@
   border-radius: 16px;
   overflow: hidden;
 }
+
+/* ── Avatar upload ─────────────────────────────── */
+.avatar-wrap {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  margin: 0 auto 12px;
+  cursor: pointer;
+}
+.avatar-wrap img {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--bw-accent);
+  display: block;
+}
+.avatar-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  gap: 4px;
+  pointer-events: none;
+}
+.avatar-wrap:hover .avatar-overlay { opacity: 1; }
+.avatar-overlay i { font-size: 1.2rem; }
+#avatar-input { display: none; }
 </style>
 
 <section class="profile-hero">
@@ -127,9 +164,23 @@
     <div class="profile-card">
       <div class="row g-4">
         <div class="col-lg-4 text-center text-lg-start">
-          <div class="profile-avatar">
-            <i class="fa fa-user"></i>
-          </div>
+          <form method="POST" enctype="multipart/form-data" id="avatar-form">
+            {% csrf_token %}
+            <input type="file" name="avatar" id="avatar-input" accept="image/*">
+            <div class="avatar-wrap" onclick="document.getElementById('avatar-input').click()">
+              {% if user_profile.avatar_url %}
+                <img src="{{ user_profile.avatar_url }}" alt="Profile picture">
+              {% else %}
+                <div class="profile-avatar">
+                  <i class="fa fa-user"></i>
+                </div>
+              {% endif %}
+              <div class="avatar-overlay">
+                <i class="fa fa-camera"></i>
+                Change Photo
+              </div>
+            </div>
+          </form>
           <div class="profile-title">{{ request.user.get_full_name|default:request.user.username }}</div>
           <div class="profile-meta">{{ request.user.email }}</div>
           <div class="profile-meta">@{{ request.user.username }}</div>
@@ -214,5 +265,23 @@
 </section>
 
 {% include 'components/footer/footer.html' %}
+
+<script>
+document.getElementById('avatar-input').addEventListener('change', function () {
+  if (!this.files || !this.files[0]) return;
+  var file = this.files[0];
+  if (file.size > 5 * 1024 * 1024) {
+    alert('Image must be under 5 MB.');
+    this.value = '';
+    return;
+  }
+  if (!file.type.startsWith('image/')) {
+    alert('Please select an image file.');
+    this.value = '';
+    return;
+  }
+  document.getElementById('avatar-form').submit();
+});
+</script>
 
 {% include 'components/base/base-bottom.html' %}
