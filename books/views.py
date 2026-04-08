@@ -12,7 +12,7 @@ import json
 import datetime
 import random
 
-from .models import Product, Rating, Order, OrderItem, Wishlist, ShippingAddress
+from .models import Product, Rating, Order, OrderItem, Wishlist, ShippingAddress, UserBehavior
 from .recommendation_engine import get_recommendations_for_user, get_similar_books
 from recommendations.services import get_user_recommendations
 from .user_interaction import (
@@ -342,13 +342,33 @@ def store(request):
         )
         cartItems = order.get_cart_items
 
-    # Use the optimized hybrid recommendation engine (with Redis + Celery)
-    recommended_books = get_user_recommendations(request.user, limit=8)
+    # Recently viewed: pull the user's latest view events, deduplicate by product,
+    # keep only approved sell listings, cap at 8.
+    recently_viewed = []
+    if request.user.is_authenticated:
+        seen_ids = set()
+        for row in (
+            UserBehavior.objects
+            .filter(
+                user=request.user.username,
+                interaction_type='view',
+                product__isnull=False,
+                product__listing_type='sell',
+                product__listing_status='approved',
+            )
+            .select_related('product')
+            .order_by('-timestamp')[:50]          # bounded scan on indexed columns
+        ):
+            if row.product_id not in seen_ids:
+                seen_ids.add(row.product_id)
+                recently_viewed.append(row.product)
+            if len(recently_viewed) >= 8:
+                break
 
     return render(request, 'store.html', {
         'products': products,
         'cartItems': cartItems,
-        'recommended_books': recommended_books,
+        'recommended_books': recently_viewed,
     })
 
 

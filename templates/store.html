@@ -443,9 +443,9 @@ body {
     <div class="store-shell" style="margin-top: 24px;">
       <div class="store-topbar" style="margin-bottom: 20px;">
         <div>
-          <div class="store-eyebrow"><i class="fas fa-magic"></i> Recommended for you</div>
-          <div class="store-title" style="font-size: 26px;">Because you interacted with similar books</div>
-          <p class="store-subtitle">These picks are tailored from your views, wishlist, cart, and purchases. The more you use BookLoop, the smarter this list becomes.</p>
+          <div class="store-eyebrow"><i class="fas fa-history"></i> Recently Viewed</div>
+          <div class="store-title" style="font-size: 26px;">Books you recently viewed</div>
+          <p class="store-subtitle">Pick up where you left off &mdash; these are the books you browsed most recently.</p>
         </div>
       </div>
 
@@ -453,7 +453,7 @@ body {
         {% for product in recommended_books %}
         <div class="store-card">
           <div class="store-card-media">
-            <div class="store-badge"><i class="fas fa-lightbulb"></i> Smart pick</div>
+            <div class="store-badge"><i class="fas fa-clock"></i> Recently viewed</div>
             <a href="{% url 'product' product.id %}">
               {% if product.image %}
               <img class="book-cover-img" src="{{ product.image.url }}" alt="{{ product.Book_name }}" data-fallback="{% static 'images/default_cover.jpg' %}" onerror="this.onerror=null; this.src=this.dataset.fallback;">
@@ -470,7 +470,7 @@ body {
             </div>
             <div class="store-price-row">
               <div class="store-price">
-                <small>Based on your activity</small>
+                <small>Recently viewed</small>
                 Rs {{ product.price|floatformat:2 }}
               </div>
               <div class="store-rating">
