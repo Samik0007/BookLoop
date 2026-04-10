@@ -100,7 +100,13 @@
 <section class="search-hero">
   <div class="container">
     <div class="search-title">Search Results</div>
-    <p class="text-muted">Results for "{{ query }}" ({{ result_count }})</p>
+    {% if search_mode == 'genre_exact' %}
+      <p class="text-muted">Showing all books in the <strong>{{ query }}</strong> category &nbsp;&middot;&nbsp; {{ result_count }} result{{ result_count|pluralize }}</p>
+    {% elif search_mode == 'genre_partial' %}
+      <p class="text-muted">Showing genres matching <strong>&ldquo;{{ query }}&rdquo;</strong> &nbsp;&middot;&nbsp; {{ result_count }} result{{ result_count|pluralize }}</p>
+    {% else %}
+      <p class="text-muted">Results for <strong>&ldquo;{{ query }}&rdquo;</strong> &nbsp;&middot;&nbsp; {{ result_count }} result{{ result_count|pluralize }}</p>
+    {% endif %}
     <hr>
   </div>
 </section>

@@ -231,33 +231,34 @@ GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')
 
 SITE_ID = 1
 LOGIN_REDIRECT_URL = '/'
-SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_STORE_TOKENS = False
 
-# Django Allauth Configuration (Updated for latest version)
+# ── Allauth core settings ──────────────────────────────────────────────────
 ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http'   # local dev: never build https:// callbacks
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_QUERY_EMAIL = True
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_LOGIN_METHODS = {'username', 'email'}
 
-# Google OAuth2 Settings
+# ── Google OAuth2 ──────────────────────────────────────────────────────────
+# Credentials come from .env; no SocialApp row needed in the DB.
+# Callback URI allauth sends to Google:
+#   http://127.0.0.1:8000/accounts/google/login/callback/
+# Add that exact URI (trailing slash required) in Google Cloud Console →
+#   APIs & Services → Credentials → OAuth client → Authorised redirect URIs.
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
             'client_id': GOOGLE_CLIENT_ID,
             'secret': GOOGLE_CLIENT_SECRET,
-            'key': ''
+            'key': '',
         },
-        'SCOPE': [
-            'profile',
-            'email',
-        ],
+        'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {
             'access_type': 'online',
             'prompt': 'select_account',
         },
         'OAUTH_PKCE_ENABLED': True,
-        'FETCH_USERINFO': True,
     }
 }

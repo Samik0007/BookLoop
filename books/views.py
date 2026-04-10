@@ -661,11 +661,19 @@ def remove_from_wishlist(request, id):
 
 def search(request):
     """
-    Search with AI-powered result ranking
+    Smart search with genre-intent detection.
+
+    Case A – Exact genre match  : query == a known genre (iexact)
+                                  → strict genre filter, no title/author bleed.
+    Case B – Partial genre match: query is a substring of one or more genres
+                                  → genre-only OR-filter across those genres.
+    Case C – Keyword             : no genre signal at all
+                                  → title + author search, ranked by relevance.
     """
     query = request.GET.get('q', '').strip()
     books = Product.objects.none()
     cartItems = 0
+    search_mode = 'keyword'
 
     if request.user.is_authenticated:
         order, _ = Order.objects.get_or_create(
@@ -674,29 +682,71 @@ def search(request):
         cartItems = order.get_cart_items
 
     if query:
-        tokens = [t for t in query.split() if t]
-        base_q = (
-            Q(Book_name__icontains=query) |
-            Q(Author__icontains=query) |
-            Q(genre__icontains=query) |
-            Q(description__icontains=query)
+        # -- collect all distinct genre values in one lightweight query ------
+        all_genres = list(
+            Product.objects
+            .exclude(genre__isnull=True)
+            .exclude(genre='')
+            .values_list('genre', flat=True)
+            .distinct()
         )
-        for token in tokens:
-            base_q |= (
-                Q(Book_name__icontains=token) |
-                Q(Author__icontains=token) |
-                Q(genre__icontains=token) |
-                Q(description__icontains=token)
-            )
+        q_lower = query.lower()
 
-        books = Product.objects.filter(base_q).annotate(
-            score=(
-                Case(When(Book_name__icontains=query, then=Value(5)), default=Value(0), output_field=IntegerField()) +
-                Case(When(Author__icontains=query, then=Value(4)), default=Value(0), output_field=IntegerField()) +
-                Case(When(genre__icontains=query, then=Value(3)), default=Value(0), output_field=IntegerField()) +
-                Case(When(description__icontains=query, then=Value(2)), default=Value(0), output_field=IntegerField())
+        # -- Case A: whole query is an exact genre name ----------------------
+        exact_genre = next(
+            (g for g in all_genres if g.strip().lower() == q_lower), None
+        )
+
+        if exact_genre:
+            books = (
+                Product.objects
+                .select_related('seller')
+                .filter(genre__iexact=exact_genre, listing_status='approved')
+                .order_by('-pub_date')
             )
-        ).order_by('-score', 'Book_name').distinct()
+            search_mode = 'genre_exact'
+
+        else:
+            # -- Case B: query is contained in one or more genre names -------
+            matching_genres = [
+                g for g in all_genres if q_lower in g.strip().lower()
+            ]
+
+            if matching_genres:
+                genre_q = Q()
+                for g in matching_genres:
+                    genre_q |= Q(genre__iexact=g)
+
+                books = (
+                    Product.objects
+                    .select_related('seller')
+                    .filter(genre_q, listing_status='approved')
+                    .order_by('-pub_date')
+                )
+                search_mode = 'genre_partial'
+
+            else:
+                # -- Case C: no genre signal — pure title / author search ----
+                books = (
+                    Product.objects
+                    .select_related('seller')
+                    .filter(
+                        Q(Book_name__icontains=query) | Q(Author__icontains=query),
+                        listing_status='approved',
+                    )
+                    .annotate(
+                        rank=Case(
+                            When(Book_name__iexact=query,      then=Value(4)),
+                            When(Book_name__istartswith=query, then=Value(3)),
+                            When(Book_name__icontains=query,   then=Value(2)),
+                            When(Author__icontains=query,      then=Value(1)),
+                            default=Value(0),
+                            output_field=IntegerField(),
+                        )
+                    )
+                    .order_by('-rank', '-pub_date')
+                )
+                search_mode = 'keyword'
 
         if request.user.is_authenticated:
             session_id = request.session.session_key
@@ -705,13 +755,14 @@ def search(request):
                 session_id = request.session.session_key
             track_search(request.user, query, session_id)
     else:
-        books = Product.objects.all().order_by('-id')
+        books = Product.objects.filter(listing_status='approved').order_by('-pub_date')
 
     return render(request, 'searchbar.html', {
-        'query': query,
-        'books': books,
-        'cartItems': cartItems,
-        'result_count': books.count()
+        'query':       query,
+        'books':       books,
+        'cartItems':   cartItems,
+        'result_count': books.count(),
+        'search_mode': search_mode,
     })
 
 

@@ -1,0 +1,60 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Google Login – Debug Info</title>
+  <style>
+    body { font-family: monospace; background: #faf7f2; padding: 40px; color: #1a1a1a; }
+    h2 { color: #c0392b; }
+    .box { background:#fff; border:1px solid #e0d8cc; border-radius:10px; padding:24px;
+           max-width:820px; margin:0 auto; box-shadow:0 4px 16px rgba(0,0,0,.07); }
+    code { display:block; background:#f4f0e8; padding:14px; border-radius:6px;
+           white-space:pre-wrap; word-break:break-all; font-size:.85rem; }
+    .step { margin-top:18px; }
+    .step strong { color:#1f8a70; }
+    a { color:#1f8a70; }
+  </style>
+</head>
+<body>
+<div class="box">
+  <h2>&#9888; Google Login Failed — Debug Mode</h2>
+
+  {% if exception %}
+  <div class="step">
+    <strong>Exception caught by allauth:</strong>
+    <code>{{ exception }}</code>
+  </div>
+  {% endif %}
+
+  <div class="step">
+    <strong>What to do RIGHT NOW:</strong><br>
+    Look at the Django <b>runserver terminal</b> — the full Python traceback is printed
+    there with the exact line that failed. Copy and paste it.
+  </div>
+
+  <div class="step">
+    <strong>Quick checklist while you check the terminal:</strong>
+    <code>
+1. GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set in .env and loaded correctly
+   → python manage.py shell -c "from django.conf import settings; print(settings.GOOGLE_CLIENT_ID[:8])"
+
+2. Site domain matches SITE_ID=1
+   → python manage.py shell -c "from django.contrib.sites.models import Site; print(Site.objects.get(id=1).domain)"
+   Expected: 127.0.0.1:8000
+
+3. No SocialApp row conflicts in DB
+   → python manage.py shell -c "from allauth.socialaccount.models import SocialApp; print(list(SocialApp.objects.all()))"
+   Expected: []
+
+4. Authorised redirect URI in Google Cloud Console must be exactly:
+   http://127.0.0.1:8000/accounts/google/login/callback/
+    </code>
+  </div>
+
+  <div class="step">
+    <a href="/login/">&larr; Back to login</a>
+  </div>
+</div>
+</body>
+</html>
