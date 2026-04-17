@@ -1039,13 +1039,9 @@ def khalti_verify_payment(request):
         if item.Book_name:
             track_purchase(request.user, item.Book_name, session_id)
 
-    try:
-        sessionStorage_flag = True  # mark recs stale (handled client-side)
-    except Exception:
-        pass
-
-    messages.success(
-        request,
-        f"Payment successful! Order #{order.user_order_number} is confirmed.",
+    from django.urls import reverse
+    success_url = (
+        reverse("order")
+        + f"?khalti_success=1&order_no={order.user_order_number}&amount={khalti_data.get('total_amount', 0)}"
     )
-    return redirect("order")
+    return redirect(success_url)

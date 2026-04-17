@@ -323,5 +323,93 @@ h1,h2,h3 { font-family: 'Merriweather', serif; }
   </div>
 </section>
 
+<!-- ── Khalti Payment Success Modal ──────────────────────────────────── -->
+<div id="khalti-success-overlay" style="
+    display:none; position:fixed; inset:0; z-index:99999;
+    background:rgba(10,20,30,.55); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center;">
+
+  <div style="
+      background:#fff; border-radius:24px; padding:44px 40px 36px;
+      max-width:420px; width:90%; text-align:center;
+      box-shadow:0 24px 60px rgba(0,0,0,.22);
+      animation:ksPop .35s cubic-bezier(.34,1.56,.64,1) both;">
+
+    <!-- Khalti purple checkmark circle -->
+    <div style="
+        width:80px; height:80px; border-radius:50%;
+        background:linear-gradient(135deg,#5C2D91,#8B5CF6);
+        display:flex; align-items:center; justify-content:center;
+        margin:0 auto 22px; box-shadow:0 8px 24px rgba(92,45,145,.35);">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
+        <path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <h2 style="font-family:'Merriweather',serif;font-size:22px;
+               color:#0b1f2a;margin-bottom:8px;">Payment Successful!</h2>
+    <p style="color:#52616b;font-size:14px;margin-bottom:6px;">
+      Your Khalti payment was confirmed.
+    </p>
+    <p id="ks-order-line" style="
+        font-size:15px;font-weight:600;color:#1f8a70;margin-bottom:4px;"></p>
+    <p id="ks-amount-line" style="
+        font-size:13px;color:#52616b;margin-bottom:28px;"></p>
+
+    <!-- Khalti branding pill -->
+    <div style="
+        display:inline-flex;align-items:center;gap:7px;
+        background:#f3eeff;border-radius:20px;
+        padding:6px 16px;margin-bottom:28px;">
+      <div style="width:10px;height:10px;border-radius:50%;background:#5C2D91;"></div>
+      <span style="font-size:12px;font-weight:600;color:#5C2D91;">Paid via Khalti</span>
+    </div>
+
+    <br>
+    <button onclick="closeKhaltiSuccess()" style="
+        background:#1f8a70;color:#fff;border:none;
+        padding:12px 36px;border-radius:12px;
+        font-size:15px;font-weight:600;cursor:pointer;
+        box-shadow:0 4px 14px rgba(31,138,112,.3);">
+      View My Orders
+    </button>
+  </div>
+</div>
+
+<style>
+@keyframes ksPop {
+  from { opacity:0; transform:scale(.85) translateY(20px); }
+  to   { opacity:1; transform:scale(1)   translateY(0);    }
+}
+</style>
+
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('khalti_success') !== '1') return;
+
+  var orderNo  = params.get('order_no')  || '';
+  var amountPs = parseInt(params.get('amount') || '0', 10);
+  var amountRs = (amountPs / 100).toFixed(2);
+
+  if (orderNo)  document.getElementById('ks-order-line').textContent  = 'Order #' + orderNo + ' confirmed';
+  if (amountPs) document.getElementById('ks-amount-line').textContent = 'Amount paid: Rs. ' + amountRs;
+
+  var overlay = document.getElementById('khalti-success-overlay');
+  overlay.style.display = 'flex';
+
+  // Clean the query string so refreshing doesn't re-show the modal
+  history.replaceState({}, '', window.location.pathname);
+
+  // Mark recommendations for refresh (new purchase)
+  try { sessionStorage.setItem('btmgya_needs_refresh', '1'); } catch(e) {}
+}());
+
+function closeKhaltiSuccess() {
+  document.getElementById('khalti-success-overlay').style.display = 'none';
+}
+</script>
+
 {% include 'components/footer/footer.html' %}
 {% include 'components/base/base-bottom.html' %}
