@@ -191,7 +191,7 @@
         <div class="col-lg-8">
           <div class="stats-grid">
             <div class="stat-card">
-              <h4>{{ orders|length }}</h4>
+              <h4>{{ total_orders_count }}</h4>
               <span>Total Orders</span>
             </div>
             <div class="stat-card">
@@ -245,7 +245,7 @@
                 <tbody>
                   {% for order in recent_orders %}
                   <tr>
-                    <td>{{ order.id }}</td>
+                    <td>#{{ order.user_order_number|default:order.id }}</td>
                     <td>{{ order.date_ordered }}</td>
                     <td>{{ order.order_status }}</td>
                     <td>Rs {{ order.get_cart_total }}</td>

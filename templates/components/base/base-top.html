@@ -53,6 +53,34 @@
 
     <script src="{% static 'js/jquery-1.11.1.min.js' %}"></script>
 
+    <script>
+    // Wishlist add — mark recommendations as stale
+    $(document).ajaxComplete(function(e, xhr, settings) {
+        if ((settings.url || '').indexOf('add-to-wishlist') !== -1) {
+            try { sessionStorage.setItem('btmgya_needs_refresh', '1'); } catch(err) {}
+        }
+    });
+
+    // Cart add — patch global fetch so ALL pages (store, search, product, etc.)
+    // are covered without modifying each template individually.
+    // _orig is bound to window so native fetch receives the correct `this`
+    // (calling fetch with this=undefined throws "Illegal invocation" in Chrome).
+    (function() {
+        var _orig = window.fetch.bind(window);
+        window.fetch = function(url, opts) {
+            if (typeof url === 'string' && url.indexOf('/update_item/') !== -1) {
+                try {
+                    var body = JSON.parse((opts || {}).body || '{}');
+                    if (body.action === 'add') {
+                        sessionStorage.setItem('btmgya_needs_refresh', '1');
+                    }
+                } catch(e) {}
+            }
+            return _orig(url, opts);
+        };
+    }());
+    </script>
+
     <!-- Font families -->
     <link
       href="//fonts.googleapis.com/css?family=Ubuntu:400,300,300italic,400italic,500,500italic,700,700italic"

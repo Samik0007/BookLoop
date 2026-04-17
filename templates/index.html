@@ -411,7 +411,7 @@ h1, h2, h3 {
             <div class="col-lg-6">
                 <div class="hero-card">
                     <span class="hero-tag"><i class="fas fa-book-open"></i> Smart Book Discovery</span>
-                    <h1>Find your next favorite book with a little AI magic.</h1>
+                    <h1>Find your next favorite book — curated just for you.</h1>
                     <p>
                         Book Loop blends curated collections, community favorites, and personalized recommendations so you
                         always have something perfect to read next.
@@ -433,7 +433,7 @@ h1, h2, h3 {
             <div class="col-md-4">
                 <div class="feature-card">
                     <div class="feature-icon" style="background:#e3f4ef;color:#1f8a70;"><i class="fas fa-magic"></i></div>
-                    <h5>AI Recommendations</h5>
+                    <h5>Recommendations</h5>
                     <p>Personalized picks based on your reading habits and genres you love.</p>
                 </div>
             </div>
@@ -970,6 +970,37 @@ h1, h2, h3 {
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        var CACHE_KEY    = 'btmgya_recs';
+        var REFRESH_FLAG = 'btmgya_needs_refresh';
+
+        var needsRefresh = false;
+        try { needsRefresh = !!sessionStorage.getItem(REFRESH_FLAG); } catch(e) {}
+
+        if (!needsRefresh) {
+            // No action taken since last visit — show cached AI recs instantly
+            try {
+                var cached = sessionStorage.getItem(CACHE_KEY);
+                if (cached) {
+                    var cachedData = JSON.parse(cached);
+                    renderCards(cachedData.recommendations);
+                    setHeading('ai_success');
+                    var s = cachedData.source_count || {};
+                    var parts = [];
+                    if (s.purchased) parts.push(s.purchased + ' purchase' + (s.purchased > 1 ? 's' : ''));
+                    if (s.cart)      parts.push(s.cart + ' cart item' + (s.cart > 1 ? 's' : ''));
+                    if (s.wishlist)  parts.push(s.wishlist + ' wishlist item' + (s.wishlist > 1 ? 's' : ''));
+                    if (subEl && parts.length) {
+                        subEl.textContent = 'Based on your ' + parts.join(', ');
+                    }
+                    return;
+                }
+            } catch(e) {}
+        }
+
+        // User bought/carted/wishlisted something (or first load) — fetch fresh recs.
+        // Clear the flag before fetching so a failed request doesn't loop forever.
+        try { sessionStorage.removeItem(REFRESH_FLAG); } catch(e) {}
+
         fetchWithTimeout('/recommendations/api/homepage/', FETCH_TIMEOUT_MS)
             .then(function (res) {
                 if (!res.ok) { throw new Error('HTTP ' + res.status); }
@@ -1005,9 +1036,37 @@ h1, h2, h3 {
                 } else if (subEl && status !== 'ai_success') {
                     subEl.textContent = 'Trending picks popular with other readers';
                 }
+
+                // Cache only AI-quality results so future navigation skips the Groq call
+                if (status === 'ai_success') {
+                    try {
+                        sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+                            recommendations: books,
+                            source_count: data.source_count || {}
+                        }));
+                    } catch(e) {}
+                }
             })
             .catch(function () {
-                // Timeout, network error, abort — keep section visible with retry
+                // Timeout or network error — show stale cached recs if available,
+                // otherwise fall back to the error state.
+                try {
+                    var stale = sessionStorage.getItem(CACHE_KEY);
+                    if (stale) {
+                        var staleData = JSON.parse(stale);
+                        renderCards(staleData.recommendations);
+                        setHeading('ai_success');
+                        var s = staleData.source_count || {};
+                        var parts = [];
+                        if (s.purchased) parts.push(s.purchased + ' purchase' + (s.purchased > 1 ? 's' : ''));
+                        if (s.cart)      parts.push(s.cart + ' cart item' + (s.cart > 1 ? 's' : ''));
+                        if (s.wishlist)  parts.push(s.wishlist + ' wishlist item' + (s.wishlist > 1 ? 's' : ''));
+                        if (subEl && parts.length) {
+                            subEl.textContent = 'Based on your ' + parts.join(', ');
+                        }
+                        return;
+                    }
+                } catch(e) {}
                 showError();
             });
     });

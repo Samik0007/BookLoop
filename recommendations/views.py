@@ -154,7 +154,7 @@ def homepage_recommendations_api(request):
     catalog_qs = (
         Product.objects.filter(listing_status="approved", listing_type="sell")
         .exclude(id__in=all_signal_ids)
-        .order_by("-id")[:80]
+        .order_by("-id")[:20]
     )
     catalog = [_catalog_dict(p) for p in catalog_qs]
 

@@ -63,6 +63,18 @@
 
 
 <div class="container">
+    {% if messages %}
+      <div style="margin-bottom:16px;">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags|default:'danger' }} alert-dismissible fade show" role="alert"
+               style="border-radius:12px;">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
     <div class="col-lg-6">
         <div class="box-element" id="form-wrapper">
             <form id="form" method="post">
@@ -105,8 +117,25 @@
 
 
         <div class="box-element hidden" id="payment-info">
-            <h4>Payment Option</h4>
-            <button id="make-payment" class="btn btn-success w-100">Cash On Delivery</button>
+            <h4 style="margin-bottom:14px;">Choose Payment Method</h4>
+
+            <!-- Cash on Delivery -->
+            <button id="make-payment" class="btn btn-success w-100" style="margin-bottom:10px;">
+                🏠 Cash on Delivery
+            </button>
+
+            <!-- Khalti -->
+            <button id="khalti-payment" class="btn w-100"
+                style="background:#5C2D91;color:#fff;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;">
+                <img src="https://khalti.com/static/khalti-logo-white.svg"
+                     alt="Khalti" style="height:22px;" onerror="this.style.display='none'">
+                Pay with Khalti
+            </button>
+
+            <div id="khalti-loading" style="display:none;text-align:center;margin-top:12px;color:#5C2D91;">
+                <span>Connecting to Khalti...</span>
+            </div>
+            <div id="khalti-error" style="display:none;margin-top:10px;" class="alert alert-danger"></div>
         </div>
     </div>
 
@@ -154,55 +183,67 @@
         document.getElementById('payment-info').classList.remove('hidden');
     })
 
-    const makePaymentBtn = document.querySelector("#make-payment");
-    makePaymentBtn.addEventListener("click", function(e) {
-        e.preventDefault();
-        // Show confirmation dialog box when button is clicked
-        const confirmation = confirm("Are you sure you want to place this order?");
-        if (confirmation) {
-            submitFormData();
-        }
-    });
-
-    function submitFormData() {
-        console.log('Payment clicked')
-
-        var userFormData = {
-            'total':total,
-        }
-
-        var shippingInfo = {
-            'address': null,
-            'city': null,
-            'ward_no': null,
-            'email': null,
-            'phone': null
-        }
-
-        if (shipping != 'False') {
-            shippingInfo.address = form.address.value
-            shippingInfo.city = form.city.value
-            shippingInfo.ward_no = form.ward_no.value
-            shippingInfo.email = form.email.value
-            shippingInfo.phone = form.phone.value
-        }
-
-        var url = "/process_order/"
-        fetch(url, {
-            method :'POST',
-            headers: {
-                'Content_Type':'application/json',
-                'X-CSRFToken': csrftoken,
-            },
-            body:JSON.stringify({'form': userFormData,'shipping':shippingInfo}),
-        })
-        .then(() => {
-            // Show a polished confirmation toast, then redirect to Order History
-            showOrderConfirmation();
-        })
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function collectShipping() {
+        if (shipping === 'False') return {};
+        return {
+            address: form.address.value,
+            city:    form.city.value,
+            ward_no: form.ward_no.value,
+            email:   form.email.value,
+            phone:   form.phone.value,
+        };
     }
 
+    // ── Cash on Delivery ──────────────────────────────────────────────────────
+    document.getElementById('make-payment').addEventListener('click', function(e) {
+        e.preventDefault();
+        if (!confirm('Are you sure you want to place this order?')) return;
+
+        fetch('/process_order/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+            body: JSON.stringify({ form: { total }, shipping: collectShipping() }),
+        })
+        .then(() => showOrderConfirmation());
+    });
+
+    // ── Khalti ────────────────────────────────────────────────────────────────
+    document.getElementById('khalti-payment').addEventListener('click', function(e) {
+        e.preventDefault();
+
+        var btn      = this;
+        var loading  = document.getElementById('khalti-loading');
+        var errorBox = document.getElementById('khalti-error');
+
+        btn.disabled    = true;
+        loading.style.display  = 'block';
+        errorBox.style.display = 'none';
+
+        fetch('/khalti/initiate/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+            body: JSON.stringify({ total: total, shipping: collectShipping() }),
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.payment_url) {
+                // Redirect to Khalti's hosted checkout (QR + wallet + bank)
+                window.location.href = data.payment_url;
+            } else {
+                throw new Error(data.error || 'Could not start Khalti payment.');
+            }
+        })
+        .catch(function(err) {
+            loading.style.display  = 'none';
+            btn.disabled           = false;
+            errorBox.textContent   = err.message || 'Payment initiation failed. Try again.';
+            errorBox.style.display = 'block';
+        });
+    });
+
     function showOrderConfirmation() {
+        try { sessionStorage.setItem('btmgya_needs_refresh', '1'); } catch(e) {}
         // Inject toast markup once
         if (!document.getElementById('bw-order-toast')) {
             document.body.insertAdjacentHTML('beforeend', `

@@ -11,6 +11,8 @@ from django.urls import reverse, reverse_lazy
 import json
 import datetime
 import random
+import requests
+from django.conf import settings
 
 from .models import Product, Rating, Order, OrderItem, Wishlist, ShippingAddress, UserBehavior
 from .recommendation_engine import get_recommendations_for_user, get_similar_books
@@ -304,10 +306,13 @@ def profile(request):
     )
     items         = order.orderitem_set.all()
     cartItems     = order.get_cart_items
-    orders        = Order.objects.filter(user=request.user.username).order_by('-date_ordered')
+    placed_orders = Order.objects.filter(
+        user=request.user.username, complete=True
+    ).order_by('-date_ordered')
     wishlist_count = Wishlist.objects.filter(user=request.user.username).count()
-    total_spent   = sum([o.get_cart_total for o in orders.filter(complete=True)])
-    recent_orders = orders[:5]
+    total_spent   = sum(o.get_cart_total for o in placed_orders)
+    total_orders_count = placed_orders.count()
+    recent_orders = placed_orders[:5]
 
     user_profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
@@ -318,13 +323,13 @@ def profile(request):
         return redirect('profile')
 
     return render(request, 'profile.html', {
-        'items':          items,
-        'cartItems':      cartItems,
-        'orders':         orders,
-        'wishlist_count': wishlist_count,
-        'total_spent':    total_spent,
-        'recent_orders':  recent_orders,
-        'user_profile':   user_profile,
+        'items':               items,
+        'cartItems':           cartItems,
+        'total_orders_count':  total_orders_count,
+        'wishlist_count':      wishlist_count,
+        'total_spent':         total_spent,
+        'recent_orders':       recent_orders,
+        'user_profile':        user_profile,
     })
 
 
@@ -485,12 +490,12 @@ class RateBookView(LoginRequiredMixin, View):
             messages.error(request, "Please select a rating from 1 to 5.")
             return redirect("product", id=book.id)
 
-        Rating.objects.update_or_create(
-            user=request.user,
-            book=book,
-            defaults={"score": score},
-        )
+        already_rated = Rating.objects.filter(user=request.user, book=book).exists()
+        if already_rated:
+            messages.error(request, "Your review was already recorded once.")
+            return redirect("product", id=book.id)
 
+        Rating.objects.create(user=request.user, book=book, score=score)
         messages.success(request, "Thanks! Your rating has been saved.")
         return redirect("product", id=book.id)
 
@@ -578,6 +583,8 @@ def updateItem(request):
     )
 
     if action == 'add':
+        if product.quantity <= 0:
+            return JsonResponse({'error': 'out_of_stock'}, status=400)
         orderItem.quantity += 1
         product.quantity -= 1
         
@@ -827,6 +834,17 @@ def ProcessOrder(request):
         # full cart — they never matched, so orders were never completed.
         order.complete = True
         order.order_status = 'Order Pending'
+
+        # Assign a per-user sequential order number (1, 2, 3 … per user)
+        if not order.user_order_number:
+            last = (
+                Order.objects
+                .filter(user=order.user, complete=True, user_order_number__isnull=False)
+                .order_by('-user_order_number')
+                .first()
+            )
+            order.user_order_number = (last.user_order_number + 1) if last else 1
+
         order.save()
 
         # Track purchases for AI recommendations
@@ -853,23 +871,181 @@ def ProcessOrder(request):
     return JsonResponse('Order processed', safe=False)
 
 
-import requests
-from django.http import JsonResponse
-import json
 
-def verify_payment(request):
+# ---------------------------------------------------------------------------
+# Khalti Payment Integration (v2 ePay API)
+# ---------------------------------------------------------------------------
+
+_KHALTI_INITIATE_URL = "https://a.khalti.com/api/v2/epayment/initiate/"
+_KHALTI_LOOKUP_URL   = "https://a.khalti.com/api/v2/epayment/lookup/"
+
+
+def khalti_initiate_payment(request):
     """
-    Dummy payment verification endpoint.
-    Keeps URL working without breaking server.
+    POST /khalti/initiate/
+
+    Called by the checkout page when the user chooses Khalti.
+    Saves shipping info, calls Khalti API server-side (secret key never
+    sent to the browser), and returns the hosted payment URL.
+
+    Returns JSON: {"payment_url": "https://pay.khalti.com/?pidx=..."}
     """
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
 
-    if request.method == "POST":
-        return JsonResponse({
-            "status": "success",
-            "message": "Payment verified (test mode)"
-        })
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Login required"}, status=401)
 
-    return JsonResponse({
-        "status": "error",
-        "message": "Invalid request"
-    }, status=400)
+    try:
+        data     = json.loads(request.body)
+        shipping = data.get("shipping", {})
+        total_rs = float(data.get("total", 0))
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid request body"}, status=400)
+
+    # Khalti requires amount in paisa (1 Rs = 100 paisa), minimum 10 Rs
+    amount_paisa = int(total_rs * 100)
+    if amount_paisa < 1000:
+        return JsonResponse({"error": "Minimum order amount is Rs 10"}, status=400)
+
+    # Get the current incomplete order
+    order, _ = Order.objects.get_or_create(
+        user=request.user.username, complete=False
+    )
+    order.payment_method = "Khalti"
+    order.save(update_fields=["payment_method"])
+
+    # Persist shipping before redirecting — verification won't have form data
+    if not ShippingAddress.objects.filter(order=order).exists():
+        if shipping.get("address"):
+            ShippingAddress.objects.create(
+                user=request.user.username,
+                order=order,
+                address=shipping.get("address", ""),
+                city=shipping.get("city", "Kathmandu"),
+                ward_no=int(shipping.get("ward_no") or 0),
+                email=shipping.get("email", ""),
+                phone=int(shipping.get("phone") or 0),
+            )
+
+    return_url  = request.build_absolute_uri("/khalti/verify/")
+    website_url = request.build_absolute_uri("/")
+
+    payload = {
+        "return_url":           return_url,
+        "website_url":          website_url,
+        "amount":               amount_paisa,
+        "purchase_order_id":    str(order.id),
+        "purchase_order_name":  f"BookLoop Order #{order.id}",
+        "customer_info": {
+            "name":  request.user.get_full_name() or request.user.username,
+            "email": shipping.get("email") or getattr(request.user, "email", ""),
+            "phone": str(shipping.get("phone", "")),
+        },
+    }
+
+    try:
+        resp = requests.post(
+            _KHALTI_INITIATE_URL,
+            json=payload,
+            headers={
+                "Authorization": f"Key {settings.KHALTI_SECRET_KEY}",
+                "Content-Type":  "application/json",
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        khalti_data = resp.json()
+    except requests.exceptions.HTTPError as exc:
+        return JsonResponse(
+            {"error": f"Khalti error: {exc.response.text[:200]}"},
+            status=502,
+        )
+    except requests.exceptions.RequestException as exc:
+        return JsonResponse({"error": f"Could not reach Khalti: {exc}"}, status=502)
+
+    # Store pidx so we can look it up when Khalti redirects back
+    order.transaction_id = khalti_data["pidx"]
+    order.save(update_fields=["transaction_id"])
+
+    return JsonResponse({"payment_url": khalti_data["payment_url"]})
+
+
+def khalti_verify_payment(request):
+    """
+    GET /khalti/verify/
+
+    Khalti redirects here after the user pays (or cancels).
+    Query params: pidx, status, transaction_id, amount, mobile,
+                  purchase_order_id, purchase_order_name
+
+    Verifies with Khalti lookup API before marking the order complete.
+    """
+    pidx   = request.GET.get("pidx", "").strip()
+
+    if not pidx:
+        messages.error(request, "Payment verification failed — no token received.")
+        return redirect("checkout")
+
+    # Find the pending order by the pidx we stored during initiation
+    try:
+        order = Order.objects.get(transaction_id=pidx, complete=False)
+    except Order.DoesNotExist:
+        messages.error(request, "Order not found or already processed.")
+        return redirect("order")
+
+    # Verify with Khalti — never trust the client-side redirect alone
+    try:
+        resp = requests.post(
+            _KHALTI_LOOKUP_URL,
+            json={"pidx": pidx},
+            headers={
+                "Authorization": f"Key {settings.KHALTI_SECRET_KEY}",
+                "Content-Type":  "application/json",
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        khalti_data = resp.json()
+    except requests.exceptions.RequestException:
+        messages.error(request, "Could not verify payment with Khalti. Contact support.")
+        return redirect("checkout")
+
+    if khalti_data.get("status") != "Completed":
+        messages.error(
+            request,
+            f"Payment {khalti_data.get('status', 'failed')}. Please try again.",
+        )
+        return redirect("checkout")
+
+    # Payment confirmed — finalise the order
+    order.complete      = True
+    order.order_status  = "Order Pending"
+
+    if not order.user_order_number:
+        last = (
+            Order.objects
+            .filter(user=order.user, complete=True, user_order_number__isnull=False)
+            .order_by("-user_order_number")
+            .first()
+        )
+        order.user_order_number = (last.user_order_number + 1) if last else 1
+
+    order.save()
+
+    # Track purchases for AI recommendations
+    session_id = request.session.session_key
+    for item in order.orderitem_set.select_related("Book_name").all():
+        if item.Book_name:
+            track_purchase(request.user, item.Book_name, session_id)
+
+    try:
+        sessionStorage_flag = True  # mark recs stale (handled client-side)
+    except Exception:
+        pass
+
+    messages.success(
+        request,
+        f"Payment successful! Order #{order.user_order_number} is confirmed.",
+    )
+    return redirect("order")

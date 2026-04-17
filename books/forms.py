@@ -54,12 +54,13 @@ class SwapBookForm(forms.ModelForm):
         ("Poor", "Poor"),
     )
 
-    genre = forms.ChoiceField(
+    genre = forms.CharField(
         required=True,
-        choices=SUBJECT_CHOICES,
-        widget=forms.Select(
+        max_length=100,
+        widget=forms.TextInput(
             attrs={
-                "class": "form-select",
+                "class": "form-control",
+                "placeholder": "e.g. Fiction, Science, Self-Help, Computing…",
             }
         ),
     )
@@ -96,7 +97,7 @@ class SwapBookForm(forms.ModelForm):
         # Helper text (shown under inputs)
         self.fields["Book_name"].help_text = "Enter the exact book title on the cover."
         self.fields["Author"].help_text = "Who wrote the book?"
-        self.fields["genre"].help_text = "Select the subject that best matches this book."
+        self.fields["genre"].help_text = "Type the subject or genre — e.g. Fiction, Computing, History."
         self.fields["condition"].help_text = "Be honest—this helps build trust."
         self.fields["image"].help_text = "Upload a clear photo (cover or front page)."
         self.fields["description"].help_text = "Short details (edition, notes, missing pages, etc.)."

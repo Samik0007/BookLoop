@@ -32,7 +32,10 @@ function updateUserOrder(productId, action){
         return response.json();
     })
     .then((data) => {
-        console.log('Data:', data)
+        if (data.error === 'out_of_stock') {
+            alertify ? alertify.error('This book is out of stock.') : alert('This book is out of stock.')
+            return
+        }
         location.reload()
     });
 }

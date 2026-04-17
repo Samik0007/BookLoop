@@ -193,6 +193,16 @@ h1,h2,h3 { font-family: 'Merriweather', serif; }
 <section style="padding:34px 0 64px;">
   <div class="container" style="max-width:820px;">
 
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert"
+             style="border-radius:12px;margin-bottom:18px;">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+
     <h2 style="font-family:'Merriweather',serif;font-size:26px;margin-bottom:4px;">My Orders</h2>
     <p style="color:var(--muted);margin-bottom:26px;">Track your purchases and manage active orders.</p>
 
@@ -203,7 +213,7 @@ h1,h2,h3 { font-family: 'Merriweather', serif; }
         <!-- ── Header ────────────────────────────── -->
         <div class="order-card-header">
           <div>
-            <div class="order-id">Order #{{ order.id }}</div>
+            <div class="order-id">Order #{{ order.user_order_number|default:order.id }}</div>
             <div class="order-date">{{ order.date_ordered|date:"F j, Y  ·  g:i a" }}</div>
           </div>
 
@@ -237,7 +247,7 @@ h1,h2,h3 { font-family: 'Merriweather', serif; }
           <form action="{% url 'delete_order' order.id %}" method="post" style="margin:0;">
             {% csrf_token %}
             <button type="submit" class="btn-cancel"
-              onclick="return confirm('Are you sure you want to cancel Order #{{ order.id }}?')">
+              onclick="return confirm('Are you sure you want to cancel Order #{{ order.user_order_number|default:order.id }}?')">
               Cancel Order
             </button>
           </form>

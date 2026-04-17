@@ -73,6 +73,7 @@ ORDER_STATUS = (
 
 METHOD = (
     ("Cash On Delivery", "Cash On Delivery"),
+    ("Khalti", "Khalti"),
 )
 
 LISTING_CHOICES = (
@@ -345,7 +346,8 @@ class Order(models.Model):
     complete = models.BooleanField(default=False)
     payment_method = models.CharField(max_length=20, choices=METHOD, default="Cash On Delivery")
     order_status = models.CharField(max_length=50, choices=ORDER_STATUS, default="Order Pending")
-    transaction_id = models.CharField(max_length=200, null=True)
+    transaction_id    = models.CharField(max_length=200, null=True)
+    user_order_number = models.PositiveIntegerField(null=True, blank=True)
 
     def __str__(self):
         return str(self.id)

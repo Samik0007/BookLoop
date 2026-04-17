@@ -228,6 +228,9 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'skzabhjkdyafplys')
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')
 
+# Khalti payment gateway — use test key for dev, live key for production
+KHALTI_SECRET_KEY = os.getenv('KHALTI_SECRET_KEY', '')
+
 
 SITE_ID = 1
 LOGIN_REDIRECT_URL = '/'
