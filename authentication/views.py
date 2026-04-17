@@ -153,7 +153,15 @@ def Login_function(request):
                 login(request, user)
                 return redirect('/')
             else:
-                messages.info(request, 'Username OR password is incorrect')
+                # Check if user exists but is deactivated
+                try:
+                    existing_user = User.objects.get(username=username)
+                    if not existing_user.is_active:
+                        messages.error(request, 'Your account has been deactivated. Please contact support.')
+                    else:
+                        messages.info(request, 'Username OR password is incorrect')
+                except User.DoesNotExist:
+                    messages.info(request, 'Username OR password is incorrect')
         context = {}
         return render(request, 'login.html', context)
 

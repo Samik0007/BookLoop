@@ -197,7 +197,7 @@
           <div class="dropdown bw-dropdown">
             <a class="bw-icon-btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
               <i class="fa fa-user-circle"></i>
-              <span>{{ request.user.first_name|default:'Profile' }}</span>
+              <span>{{ request.user.username }}</span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="fa fa-user"></i> Profile</a></li>

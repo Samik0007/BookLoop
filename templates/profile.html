@@ -181,9 +181,11 @@
               </div>
             </div>
           </form>
-          <div class="profile-title">{{ request.user.get_full_name|default:request.user.username }}</div>
+          <div class="profile-title">{{ request.user.username }}</div>
+          {% if request.user.get_full_name %}
+          <div class="profile-meta">{{ request.user.get_full_name }}</div>
+          {% endif %}
           <div class="profile-meta">{{ request.user.email }}</div>
-          <div class="profile-meta">@{{ request.user.username }}</div>
           <div class="profile-actions" style="margin-top: 16px;">
             <a href="{% url 'changepassword' %}"><i class="fa fa-lock"></i> Change Password</a>
           </div>
