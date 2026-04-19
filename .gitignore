@@ -18,3 +18,9 @@ venv/
 # Django collected/static media artifacts
 staticfiles/
 media/
+
+.claude/
+.venv/
+.vscode/
+.ai_cache/
+__pycache__/

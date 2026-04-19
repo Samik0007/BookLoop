@@ -1,0 +1,134 @@
+{% load static %}
+{% include "components/base/base-top.html" %}
+{% include "components/header/header.html" %}
+
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root { --ink:#0b1f2a; --muted:#52616b; --accent:#1f8a70; }
+body { font-family:'Work Sans',sans-serif; color:var(--ink); background:#f4f6f8; }
+h1,h2,h3,h4,h5,h6 { font-family:'Merriweather',serif; }
+.bsform-card { background:#fff; border-radius:16px; box-shadow:0 4px 24px rgba(11,31,42,.09); overflow:hidden; }
+.bsform-header { background:var(--ink); color:#fff; padding:22px 28px; }
+.bsform-body { padding:28px; }
+.bsform-label { font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:5px; }
+.form-control, select.form-control {
+  border-radius:9px !important; border:1.5px solid #e2e8f0 !important; font-size:.9rem; padding:9px 12px;
+}
+.form-control:focus { border-color:var(--accent) !important; box-shadow:0 0 0 3px rgba(31,138,112,.12) !important; }
+.bsform-submit { background:var(--accent); color:#fff; border:none; border-radius:11px; font-weight:700; font-size:1rem; padding:13px 28px; cursor:pointer; transition:background .2s; }
+.bsform-submit:hover { background:#176b56; }
+.bsform-back { color:var(--muted); text-decoration:none; font-size:.87rem; display:inline-flex; align-items:center; gap:5px; }
+.bsform-back:hover { color:var(--ink); }
+.bsform-divider { height:1px; background:#f0f4f8; margin:18px 0; }
+.current-cover { border-radius:10px; max-height:120px; object-fit:contain; border:1px solid #e2e8f0; }
+</style>
+
+<main class="container py-5" style="min-height:72vh;">
+  <div class="row justify-content-center">
+    <div class="col-lg-7 col-md-10">
+
+      <div class="mb-4">
+        <a href="{% url 'bookshop_dashboard' %}" class="bsform-back">
+          <i class="fa fa-arrow-left"></i> Back to Dashboard
+        </a>
+      </div>
+
+      <div class="bsform-card">
+        <div class="bsform-header">
+          <div class="d-flex align-items-center gap-3">
+            <div style="width:46px;height:46px;background:rgba(255,255,255,.12);border-radius:12px;
+                        display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">
+              ✏️
+            </div>
+            <div>
+              <h5 style="margin:0;font-size:1.1rem;font-weight:700;">Edit Book Listing</h5>
+              <div style="font-size:.8rem;opacity:.65;margin-top:2px;">{{ product.Book_name }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bsform-body">
+
+          {% if messages %}
+            {% for msg in messages %}
+              <div class="alert alert-{{ msg.tags|default:'danger' }} alert-dismissible fade show mb-4" style="border-radius:9px;font-size:.88rem;">
+                {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <!-- Current cover preview -->
+          {% if product.image %}
+          <div class="mb-4 d-flex align-items-center gap-3 p-3" style="background:#f8fafc;border-radius:10px;">
+            <img src="{{ product.image.url }}" alt="Current cover" class="current-cover">
+            <div>
+              <div style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Current Cover</div>
+              <div style="font-size:.85rem;color:var(--ink);margin-top:3px;">{{ product.Book_name }}</div>
+              <div style="font-size:.8rem;color:var(--muted);">Upload a new image below to replace it.</div>
+            </div>
+          </div>
+          {% endif %}
+
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <div class="bsform-label">Book Title <span style="color:#e53e3e;">*</span></div>
+              {{ form.Book_name }}
+            </div>
+            <div class="mb-3">
+              <div class="bsform-label">Author <span style="color:#e53e3e;">*</span></div>
+              {{ form.Author }}
+            </div>
+            <div class="mb-3">
+              <div class="bsform-label">Genre / Subject <span style="color:#e53e3e;">*</span></div>
+              {{ form.genre }}
+            </div>
+            <div class="mb-3">
+              <div class="bsform-label">Description</div>
+              {{ form.description }}
+            </div>
+
+            <div class="bsform-divider"></div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <div class="bsform-label">Price (Rs.) <span style="color:#e53e3e;">*</span></div>
+                {{ form.price }}
+              </div>
+              <div class="col-6">
+                <div class="bsform-label">Quantity <span style="color:#e53e3e;">*</span></div>
+                {{ form.quantity }}
+              </div>
+            </div>
+            <div class="mb-3">
+              <div class="bsform-label">Condition</div>
+              {{ form.condition }}
+            </div>
+
+            <div class="bsform-divider"></div>
+
+            <div class="mb-4">
+              <div class="bsform-label">New Cover Image <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">(optional — leave blank to keep current)</span></div>
+              {{ form.image }}
+            </div>
+
+            <div class="d-flex gap-3">
+              <button type="submit" class="bsform-submit">
+                <i class="fa fa-save me-2"></i> Save Changes
+              </button>
+              <a href="{% url 'bookshop_dashboard' %}" class="btn" style="border:1.5px solid #e2e8f0;border-radius:11px;font-weight:600;padding:12px 22px;color:var(--muted);">
+                Cancel
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+{% include "components/footer/footer.html" %}
+{% include "components/base/base-bottom.html" %}

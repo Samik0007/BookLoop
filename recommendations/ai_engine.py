@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 
 _GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 _MODEL = "llama-3.1-8b-instant"
-_TIMEOUT = 30          # seconds — increased for slow networks
-_MAX_TOKENS = 2048     # 8 books with reasons needs ~1500 tokens; 2048 is safe
-_TEMPERATURE = 0.3
+_TIMEOUT = 25          # seconds — Groq server timeout; browser fetch has no limit
+_MAX_TOKENS = 1200     # 8 recs × ~130 tokens; enough for specific reasons
+_TEMPERATURE = 0.5     # mid-range: varied reasons without hallucination
 
 
 def _build_prompt(
@@ -33,14 +33,6 @@ def _build_prompt(
     cold_start_hint: str = "",
 ) -> str:
     """Return the full system+user prompt string."""
-
-    def _fmt(books: list[dict]) -> str:
-        if not books:
-            return "  (none)"
-        return "\n".join(
-            f"  - {b.get('title', 'Unknown')} by {b.get('author', 'Unknown')} [{b.get('genre', 'General')}]"
-            for b in books
-        )
 
     catalog_lines = "\n".join(
         f"  [ID:{b['id']}] {b.get('title', 'Unknown')} by {b.get('author', 'Unknown')} "
@@ -55,37 +47,65 @@ def _build_prompt(
         else "No books to exclude."
     )
 
-    # Cold-start: no user history — add a discovery hint so Groq has a signal
+    # Derive ordered preferred genres (purchased weighted 3×, cart 2×, wishlist 1×)
+    _genre_weight: dict[str, int] = {}
+    for _b, _w in [(b, 3) for b in purchased] + \
+                   [(b, 2) for b in cart] + \
+                   [(b, 1) for b in wishlist]:
+        _g = _b.get("genre") or "General"
+        _genre_weight[_g] = _genre_weight.get(_g, 0) + _w
+    preferred_genres_str = (
+        ", ".join(sorted(_genre_weight, key=lambda g: -_genre_weight[g])[:8])
+        if _genre_weight else "new user — recommend popular titles across genres"
+    )
+
+    # Compact history — title only to save tokens, but keep enough for Groq to write
+    # specific reasons that reference the user's actual titles.
+    def _fmt_titled(books: list[dict]) -> str:
+        if not books:
+            return "(none)"
+        # Deduplicate by title so repeated purchases don't bloat the prompt
+        seen: set[str] = set()
+        parts: list[str] = []
+        for b in books:
+            t = b.get("title", "?")
+            if t not in seen:
+                seen.add(t)
+                parts.append(f'"{t}" [{b.get("genre","?")}]')
+        return ", ".join(parts)
+
     history_section = (
-        f"PURCHASED (strongest signal):\n{_fmt(purchased)}\n\n"
-        f"IN CART (strong signal):\n{_fmt(cart)}\n\n"
-        f"IN WISHLIST (moderate signal):\n{_fmt(wishlist)}"
+        f"Purchased: {_fmt_titled(purchased)}\n"
+        f"Cart: {_fmt_titled(cart)}\n"
+        f"Wishlist: {_fmt_titled(wishlist)}\n"
+        f"Top preferred genres: {preferred_genres_str}"
     )
     if cold_start_hint:
-        history_section += (
-            f"\n\nCOLD-START HINT (user is new — no history yet):\n  {cold_start_hint}\n"
-            "  Recommend a diverse and popular selection of 8 books from different genres."
-        )
+        history_section += f"\nNote: {cold_start_hint}"
 
     return (
-        "You are a book recommendation engine for a second-hand book marketplace in Nepal.\n"
-        "A user's reading history and interests are provided below. Recommend exactly 8 books "
-        "strictly from the AVAILABLE CATALOG list.\n\n"
-        "--- USER HISTORY ---\n"
+        "You are a personalised book recommendation engine for a second-hand marketplace in Nepal.\n"
+        "Study the user's reading history below, then pick 8 books from the CATALOG.\n\n"
+        "USER HISTORY:\n"
         f"{history_section}\n\n"
-        "--- AVAILABLE CATALOG ---\n"
+        "CATALOG:\n"
         f"{catalog_lines}\n\n"
-        "--- RULES ---\n"
+        "RULES:\n"
         f"1. {exclude_note}\n"
-        "2. Recommend exactly 8 books from the catalog above.\n"
-        "3. Prioritize books in similar genres to the user's history (or vary genres for new users).\n"
-        "4. Return ONLY a raw JSON array — no markdown fences, no explanation, no intro text.\n"
-        "5. Each object must have exactly these keys:\n"
-        '   {"id": <int>, "title": <str>, "author": <str>, "genre": <str>, "reason": <one sentence str>}\n'
-        "6. If fewer than 8 good matches exist, return as many as possible (minimum 1).\n"
-        "7. Do not invent books or IDs — only use books from the catalog.\n"
-        "8. Start your response with [ and end with ] — nothing else.\n\n"
-        "Output (raw JSON array only):"
+        "2. Return exactly 8 recommendations (fewer only if <8 valid catalog options).\n"
+        "3. At least 5 of 8 must come from the user's top preferred genres.\n"
+        "4. Max 2 books from the same genre — keep picks varied.\n"
+        "5. reason field: write one SHORT, SPECIFIC sentence (10–15 words) that:\n"
+        "   - Names a book the user actually read/bought that this recommendation relates to.\n"
+        "   - Explains concretely why THIS book will appeal to them.\n"
+        "   - GOOD: \"Like P.S. I Love You, this is an emotional romance with unforgettable characters.\"\n"
+        "   - BAD: \"User purchased a romance book so we recommend this.\" (too generic)\n"
+        "   - Each reason must be UNIQUE — no copy-pasting the same sentence.\n"
+        "6. Only use IDs from the catalog. Never invent IDs or titles.\n"
+        "7. Output raw JSON only — no markdown, no explanation.\n"
+        '   Format: [{"id":int,"title":str,"author":str,"genre":str,"reason":str},...]\n'
+        "   Start with [ and end with ].\n\n"
+        "JSON:"
     )
 
 

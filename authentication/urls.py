@@ -16,4 +16,6 @@ urlpatterns = [
    path('changePassword/',views.changePassword,name="changepassword"),
    path('bookshop/dashboard/', views.bookshop_dashboard, name='bookshop_dashboard'),
    path('bookshop/add-book/', views.bookshop_add_book, name='bookshop_add_book'),
+   path('bookshop/edit-book/<int:book_id>/', views.bookshop_edit_book, name='bookshop_edit_book'),
+   path('bookshop/delete-book/<int:book_id>/', views.bookshop_delete_book, name='bookshop_delete_book'),
 ]

@@ -389,7 +389,7 @@ class OrderItem(models.Model):
 
     @property
     def get_total(self):
-        return self.Book_name.price * self.quantity
+        return self.Book_name.discounted_price * self.quantity
 
 
 class ShippingAddress(models.Model):

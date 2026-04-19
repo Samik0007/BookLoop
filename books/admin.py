@@ -23,7 +23,21 @@ from .models import (  # noqa: F401
 )
 
 
-admin.site.register(ShippingAddress)
+@admin.register(ShippingAddress)
+class ShippingAddressAdmin(admin.ModelAdmin):
+    list_display = ('id', 'order_id_display', 'user', 'address', 'city', 'ward_no', 'phone', 'date_added')
+    list_filter  = ('city',)
+    search_fields = ('user', 'address', 'phone')
+    ordering = ('-date_added',)
+
+    @admin.display(description='Order ID', ordering='order__id')
+    def order_id_display(self, obj):
+        if obj.order:
+            url = reverse('admin:books_order_change', args=[obj.order.id])
+            return format_html('<a href="{}">#{}</a>', url, obj.order.id)
+        return '—'
+
+
 admin.site.register(Wishlist)
 
 

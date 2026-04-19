@@ -2,13 +2,15 @@
 Recommendation views.
 
 Endpoints:
-  GET /recommendations/              → full AI recommendations page (ai_recommendations)
-  GET /recommendations/api/homepage/ → AJAX JSON endpoint (homepage_recommendations_api)
+  GET /recommendations/                → full AI recommendations page (ai_recommendations)
+  GET /recommendations/api/trending/   → fast trending books (no AI, < 100 ms)
+  GET /recommendations/api/homepage/   → full AI recommendations (may be slow)
 """
 from __future__ import annotations
 
 import logging
 
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import render
 
@@ -26,13 +28,39 @@ _FALLBACK_LIMIT = 8
 
 
 def _get_fallback_books() -> list[dict]:
-    """Return the 6 most recently added approved sell books as dicts."""
-    qs = (
-        Product.objects.filter(listing_status="approved", listing_type="sell")
-        .order_by("-id")[:_FALLBACK_LIMIT]
+    """Return genre-diverse trending books for the stage-1 cards.
+
+    Uses the existing ``views`` field for popularity — no JOIN, no annotation,
+    single fast query evaluated once in Python.
+    """
+    # One query, bounded to 80 rows, no heavy aggregation
+    pool = list(
+        Product.objects
+        .filter(listing_status="approved", listing_type="sell")
+        .order_by("-views", "-id")[:80]
     )
-    books = [_product_to_dict(p) for p in qs]
-    print(f"[RECS] Fallback: fetched {len(books)} trending books from DB.")
+
+    seen_genres: set = set()
+    diverse: list = []
+    for p in pool:
+        g = p.genre or "General"
+        if g not in seen_genres:
+            seen_genres.add(g)
+            diverse.append(p)
+        if len(diverse) >= _FALLBACK_LIMIT:
+            break
+
+    # Fill any remaining slots from the same pool (already in memory)
+    if len(diverse) < _FALLBACK_LIMIT:
+        seen_ids = {p.id for p in diverse}
+        for p in pool:
+            if p.id not in seen_ids:
+                diverse.append(p)
+            if len(diverse) >= _FALLBACK_LIMIT:
+                break
+
+    books = [_product_to_dict(p) for p in diverse]
+    print(f"[RECS] Trending fallback: {len(books)} genre-diverse books.")
     return books
 
 
@@ -72,6 +100,25 @@ def _catalog_dict(p: Product) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Fast trending endpoint — no AI, just DB, responds in < 100 ms
+# ---------------------------------------------------------------------------
+
+def trending_books_api(request):
+    """
+    GET /recommendations/api/trending/
+
+    Returns the most-recently-added approved sell books immediately.
+    No Groq call — used as the stage-1 fast load on the homepage.
+    """
+    books = _get_fallback_books()
+    return JsonResponse({
+        "status": "trending",
+        "recommendations": books,
+        "source_count": {"purchased": 0, "cart": 0, "wishlist": 0},
+    })
+
+
+# ---------------------------------------------------------------------------
 # AJAX endpoint consumed by the homepage JS
 # ---------------------------------------------------------------------------
 
@@ -100,6 +147,17 @@ def homepage_recommendations_api(request):
         })
 
     username = request.user.username
+    cache_key = f'btmgya_recs_{username}'
+    force_refresh = request.GET.get('refresh') == '1'
+
+    # ── Server-side cache hit (4 h TTL) ──────────────────────────────────────
+    # Skip cache only when the client explicitly signals a user action
+    # (cart add / wishlist / purchase) via ?refresh=1.
+    if not force_refresh:
+        cached = cache.get(cache_key)
+        if cached is not None:
+            print(f"[RECS] Serving server-side cache for '{username}'.")
+            return JsonResponse(cached)
 
     # ---- 1. Gather user signal books ----------------------------------------
 
@@ -110,27 +168,30 @@ def homepage_recommendations_api(request):
         .values_list("Book_name_id", flat=True)
         .distinct()
     )
-    purchased_ids: set[int] = set(purchased_qs)
+    # Filter out None — happens when an ordered product was deleted (SET_NULL)
+    purchased_ids: set[int] = {i for i in purchased_qs if i is not None}
 
     # Cart: latest incomplete order
     cart_ids: set[int] = set()
     try:
         active_order = Order.objects.filter(user=username, complete=False).last()
         if active_order:
-            cart_ids = set(
-                OrderItem.objects.filter(order=active_order)
+            cart_ids = {
+                i for i in OrderItem.objects.filter(order=active_order)
                 .values_list("Book_name_id", flat=True)
                 .distinct()
-            )
+                if i is not None
+            }
     except Exception:
         pass
 
     # Wishlist
-    wishlist_ids: set[int] = set(
-        Wishlist.objects.filter(user=username)
+    wishlist_ids: set[int] = {
+        i for i in Wishlist.objects.filter(user=username)
         .values_list("product_id", flat=True)
         .distinct()
-    )
+        if i is not None
+    }
 
     all_signal_ids = purchased_ids | cart_ids | wishlist_ids
 
@@ -140,23 +201,57 @@ def homepage_recommendations_api(request):
         for p in Product.objects.filter(id__in=all_signal_ids)
     }
 
-    purchased_books = [_catalog_dict(signal_products[i]) for i in purchased_ids if i in signal_products]
-    cart_books = [_catalog_dict(signal_products[i]) for i in cart_ids if i in signal_products]
-    wishlist_books = [_catalog_dict(signal_products[i]) for i in wishlist_ids if i in signal_products]
+    purchased_books  = [_catalog_dict(signal_products[i]) for i in purchased_ids  if i in signal_products]
+    cart_books       = [_catalog_dict(signal_products[i]) for i in cart_ids        if i in signal_products]
+    wishlist_books   = [_catalog_dict(signal_products[i]) for i in wishlist_ids    if i in signal_products]
 
+    # Use the raw ID counts so source_count reflects ALL activity,
+    # including books later archived (they still shaped the user's taste).
     source_count = {
-        "purchased": len(purchased_books),
-        "cart": len(cart_books),
-        "wishlist": len(wishlist_books),
+        "purchased": len(purchased_ids),
+        "cart":      len(cart_ids),
+        "wishlist":  len(wishlist_ids),
     }
 
-    # ---- 2. Build catalog (exclude already-signalled books) ------------------
-    catalog_qs = (
-        Product.objects.filter(listing_status="approved", listing_type="sell")
+    # ---- 2. Build catalog -----------------------------------------------------
+    # Hard cap: 10 preferred-genre books + 5 discovery books = 15 max.
+    # Keeps the Groq prompt small enough to respond in 2-5 s on free tier.
+    preferred_genres: set[str] = {
+        b["genre"] for b in purchased_books + cart_books + wishlist_books
+        if b.get("genre")
+    }
+
+    _pref_books: list = []
+    _disc_seen: dict  = {}   # genre → first Product seen (discovery)
+
+    for _p in (
+        Product.objects
+        .filter(listing_status="approved", listing_type="sell")
         .exclude(id__in=all_signal_ids)
-        .order_by("-id")[:20]
+        .order_by("-views", "-id")
+    ):
+        _g = _p.genre or "General"
+        if _g in preferred_genres and len(_pref_books) < 10:
+            _pref_books.append(_p)
+        elif _g not in preferred_genres and _g not in _disc_seen and len(_disc_seen) < 5:
+            _disc_seen[_g] = _p   # 1 discovery book per non-preferred genre, 5 max
+
+        # Stop early once we have enough of each kind
+        pref_done = len(_pref_books) >= 10 or not preferred_genres
+        disc_done = len(_disc_seen) >= 5
+        if pref_done and disc_done:
+            break
+
+    catalog_pool = (
+        sorted(_pref_books, key=lambda p: p.genre or "")
+        + sorted(_disc_seen.values(), key=lambda p: p.genre or "")
     )
-    catalog = [_catalog_dict(p) for p in catalog_qs]
+    catalog = [_catalog_dict(p) for p in catalog_pool]
+    print(
+        f"[RECS] Catalog: {len(catalog)} books "
+        f"({len(_pref_books)} from {len(preferred_genres)} preferred genres + "
+        f"{len(_disc_seen)} discovery genres)."
+    )
 
     # ---- 3. Force-Start / cold-start signal ----------------------------------
     # When a user has zero history Groq still needs *something* to act on.
@@ -242,11 +337,15 @@ def homepage_recommendations_api(request):
         })
 
     print(f"[RECS] AI success — returning {len(recommendations)} AI recommendations.")
-    return JsonResponse({
+    response_data = {
         "status": "ai_success",
         "recommendations": recommendations,
         "source_count": source_count,
-    })
+    }
+    # Store in server-side cache for 4 hours so Groq is only called once
+    # per user per 4 hours, regardless of browser state.
+    cache.set(cache_key, response_data, 4 * 60 * 60)
+    return JsonResponse(response_data)
 
 
 # ---------------------------------------------------------------------------

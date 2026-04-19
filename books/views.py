@@ -2,7 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Case, When, IntegerField, Value, Count, F, Sum, Avg, ExpressionWrapper, DecimalField
+from django.db.models import Q, Case, When, IntegerField, Value, Count, F, Sum, Avg, ExpressionWrapper, DecimalField, Subquery, OuterRef
+from django.db import transaction
 from django.views.generic import ListView
 from django.views.generic.edit import CreateView
 from django.views import View
@@ -13,6 +14,9 @@ import datetime
 import random
 import requests
 from django.conf import settings
+from django.core.mail import send_mail
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 from .models import Product, Rating, Order, OrderItem, Wishlist, ShippingAddress, UserBehavior
 from .recommendation_engine import get_recommendations_for_user, get_similar_books
@@ -186,12 +190,12 @@ class AddDonationBookView(LoginRequiredMixin, CreateView):
 
         messages.success(
             self.request,
-            "Thank you! Your donation is pending admin approval.",
+            "✅ Your book has been submitted! It is pending admin approval and will appear in the donations page once approved.",
         )
         return super().form_valid(form)
 
     def get_success_url(self):  # type: ignore[override]
-        return reverse_lazy("home")
+        return reverse_lazy("browse_donations")
 
 
 class BrowseDonationsView(ListView):
@@ -208,6 +212,12 @@ class BrowseDonationsView(ListView):
             .filter(listing_type="donate", listing_status="approved")
             .order_by("-pub_date", "-id")
         )
+
+    def get_context_data(self, **kwargs):  # type: ignore[override]
+        context = super().get_context_data(**kwargs)
+        from django.conf import settings as django_settings
+        context["admin_email"] = getattr(django_settings, "EMAIL_HOST_USER", "samikisdope07@gmail.com")
+        return context
 
 # -------------------------
 # BASIC PAGES
@@ -338,7 +348,26 @@ def profile(request):
 # -------------------------
 
 def store(request):
-    products = Product.objects.filter(listing_type="sell", listing_status="approved")
+    # Show one card per book title — cheapest in-stock approved listing per title.
+    # When that seller's stock hits 0, the next cheapest automatically surfaces.
+    _best_id_sub = (
+        Product.objects
+        .filter(
+            Book_name=OuterRef('Book_name'),
+            listing_type='sell',
+            listing_status='approved',
+            quantity__gt=0,
+        )
+        .order_by('price', 'pub_date')
+        .values('id')[:1]
+    )
+    products = (
+        Product.objects
+        .select_related('seller')
+        .filter(listing_type='sell', listing_status='approved', quantity__gt=0)
+        .annotate(best_id=Subquery(_best_id_sub))
+        .filter(id=F('best_id'))
+    )
     cartItems = 0
 
     if request.user.is_authenticated:
@@ -462,11 +491,26 @@ def prod_detail(request, id):
     # Get similar books using AI
     similar_books = get_similar_books(product, limit=6)
 
+    # Other sellers offering the same book title (cheapest first, excluding current)
+    other_sellers = (
+        Product.objects
+        .select_related('seller')
+        .filter(
+            Book_name__iexact=product.Book_name,
+            listing_type='sell',
+            listing_status='approved',
+            quantity__gt=0,
+        )
+        .exclude(id=product.id)
+        .order_by('price')
+    )
+
     return render(request, 'productdetails.html', {
         'data': product,
         'cartItems': cartItems,
         'similar_books': similar_books,
         'user_rating': user_rating,
+        'other_sellers': other_sellers,
     })
 
 
@@ -552,7 +596,7 @@ def checkout(request):
             if single_item:
                 items = [single_item]
                 is_buy_now = True
-                buy_now_total = single_item.Book_name.price * single_item.quantity
+                buy_now_total = single_item.Book_name.discounted_price * single_item.quantity
             else:
                 items = order.orderitem_set.all()
         else:
@@ -574,33 +618,61 @@ def updateItem(request):
     productId = data['productId']
     action = data['action']
 
-    product = get_object_or_404(Product, id=productId)
+    original_product = get_object_or_404(Product, id=productId)
     order, _ = Order.objects.get_or_create(
         user=request.user.username, complete=False
     )
-    orderItem, _ = OrderItem.objects.get_or_create(
-        order=order, Book_name=product
-    )
+    session_id = request.session.session_key
 
     if action == 'add':
-        if product.quantity <= 0:
-            return JsonResponse({'error': 'out_of_stock'}, status=400)
-        orderItem.quantity += 1
-        product.quantity -= 1
-        
-        # Track cart addition for AI recommendations
-        session_id = request.session.session_key
-        track_cart_addition(request.user, product, session_id)
+        if original_product.listing_type == 'sell':
+            # Route to cheapest in-stock seller for this title.
+            # select_for_update prevents two concurrent buyers from both
+            # grabbing the last copy (race condition protection).
+            with transaction.atomic():
+                best = (
+                    Product.objects
+                    .select_for_update()
+                    .filter(
+                        Book_name__iexact=original_product.Book_name,
+                        listing_type='sell',
+                        listing_status='approved',
+                        quantity__gt=0,
+                    )
+                    .order_by('price', 'pub_date')
+                    .first()
+                )
+                if not best:
+                    return JsonResponse({'error': 'out_of_stock'}, status=400)
+
+                orderItem, _ = OrderItem.objects.get_or_create(order=order, Book_name=best)
+                orderItem.quantity += 1
+                best.quantity -= 1
+                orderItem.save()
+                best.save()
+
+            track_cart_addition(request.user, best, session_id)
+
+        else:
+            # Swap / donate listings: no auto-routing, original behaviour
+            orderItem, _ = OrderItem.objects.get_or_create(order=order, Book_name=original_product)
+            if original_product.quantity <= 0:
+                return JsonResponse({'error': 'out_of_stock'}, status=400)
+            orderItem.quantity += 1
+            original_product.quantity -= 1
+            orderItem.save()
+            original_product.save()
+            track_cart_addition(request.user, original_product, session_id)
 
     elif action == 'remove':
+        product = get_object_or_404(Product, id=productId)
+        orderItem, _ = OrderItem.objects.get_or_create(order=order, Book_name=product)
         orderItem.quantity -= 1
         product.quantity += 1
-
-    orderItem.save()
-    product.save()
-
-    if orderItem.quantity <= 0:
-        orderItem.delete()
+        orderItem.save()
+        product.save()
+        if orderItem.quantity <= 0:
+            orderItem.delete()
 
     return JsonResponse('Item updated', safe=False)
 
@@ -818,55 +890,171 @@ def delete_order(request, order_id):
 # PAYMENT
 # -------------------------
 
+def send_order_confirmation_email(order, payment_method, recipient_email):
+    """
+    Send a plain-text order confirmation email to the customer.
+    Wrapped in try/except — a mail failure never blocks order completion.
+    """
+    if not recipient_email:
+        return
+
+    items = order.orderitem_set.select_related('Book_name').all()
+    item_lines = '\n'.join(
+        f"  • {item.Book_name.Book_name}  x{item.quantity}  —  Rs. {item.Book_name.discounted_price * item.quantity}"
+        for item in items if item.Book_name
+    ) or '  (no items)'
+
+    body = (
+        f"Hi {order.user},\n\n"
+        f"Your order has been confirmed! Here's a summary:\n\n"
+        f"{'─' * 40}\n"
+        f"Order ID   : #{order.user_order_number}\n"
+        f"Payment    : {payment_method}\n"
+        f"{'─' * 40}\n\n"
+        f"Books Ordered:\n{item_lines}\n\n"
+        f"{'─' * 40}\n"
+        f"Order Total: Rs. {order.get_cart_total}\n"
+        f"{'─' * 40}\n\n"
+        f"Your books will be delivered to your address shortly.\n\n"
+        f"Thank you for choosing BookLoop!\n\n"
+        f"— The BookLoop Team\n"
+    )
+
+    try:
+        send_mail(
+            subject="Order Confirmed – BookLoop 📚",
+            message=body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[recipient_email],
+            fail_silently=False,
+        )
+        print(f"[EMAIL] Confirmation sent to {recipient_email} for order #{order.user_order_number}")
+    except Exception as exc:
+        print(f"[EMAIL] Failed to send confirmation (order #{order.user_order_number}): {exc}")
+
+
+def _assign_order_number(order):
+    """Assign the next sequential per-user order number if not already set."""
+    if not order.user_order_number:
+        last = (
+            Order.objects
+            .filter(user=order.user, complete=True, user_order_number__isnull=False)
+            .exclude(id=order.id)
+            .order_by('-user_order_number')
+            .first()
+        )
+        order.user_order_number = (last.user_order_number + 1) if last else 1
+
+
+def _notify_admin_new_order(order, payment_method):
+    """Send a plain-text admin alert when an order is placed successfully."""
+    try:
+        admin_email = settings.ADMIN_EMAIL
+        if not admin_email:
+            return
+        items = order.orderitem_set.select_related('Book_name').all()
+        item_lines = '\n'.join(
+            f"  • {item.Book_name.Book_name}  x{item.quantity}  —  Rs. {item.Book_name.discounted_price * item.quantity}"
+            for item in items if item.Book_name
+        ) or '  (no items)'
+        send_mail(
+            subject=f'[BookLoop] New order #{order.user_order_number} by {order.user}',
+            message=(
+                f'A new order has been placed on BookLoop.\n\n'
+                f'Order #  : {order.user_order_number}\n'
+                f'Customer : {order.user}\n'
+                f'Payment  : {payment_method}\n'
+                f'Total    : Rs. {order.get_cart_total}\n\n'
+                f'Items:\n{item_lines}\n'
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[admin_email],
+            fail_silently=True,
+        )
+    except Exception:
+        pass
+
+
 def ProcessOrder(request):
     transaction_id = datetime.datetime.now().timestamp()
     data = json.loads(request.body)
 
-    if request.user.is_authenticated:
+    # ── Server-side email validation ──────────────────────────────────────────
+    shipping            = data.get('shipping', {})
+    email_input         = (shipping.get('email') or '').strip()
+    buy_now_product_id  = data.get('buy_now_product_id')
+
+    if email_input:
+        try:
+            validate_email(email_input)
+        except ValidationError:
+            return JsonResponse({'error': 'Please enter a valid email address.'}, status=400)
+
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Login required.'}, status=401)
+
+    session_id = request.session.session_key
+
+    if buy_now_product_id:
+        # ── Buy-Now path: isolate ONLY this product into its own order ────────
+        cart_order, _ = Order.objects.get_or_create(
+            user=request.user.username, complete=False
+        )
+        buy_now_item = cart_order.orderitem_set.filter(
+            Book_name_id=buy_now_product_id
+        ).first()
+        if not buy_now_item:
+            return JsonResponse({'error': 'Item not found in cart.'}, status=400)
+
+        # Create a fresh, standalone order for the single product
+        order = Order.objects.create(
+            user=request.user.username,
+            complete=True,
+            transaction_id=transaction_id,
+            order_status='Order Pending',
+        )
+        _assign_order_number(order)
+        order.save()
+
+        # Relocate the item from the cart to the buy-now order
+        buy_now_item.order = order
+        buy_now_item.save()
+
+        # Track the purchase for AI recommendations
+        if buy_now_item.Book_name:
+            track_purchase(request.user, buy_now_item.Book_name, session_id)
+
+    else:
+        # ── Normal cart checkout: complete the entire cart order ──────────────
         order, _ = Order.objects.get_or_create(
             user=request.user.username, complete=False
         )
-
         order.transaction_id = transaction_id
-        # Always mark complete on payment confirmation.
-        # The old total == get_cart_total check was unreliable:
-        # Buy Now sends a single-item price; get_cart_total returns the
-        # full cart — they never matched, so orders were never completed.
-        order.complete = True
-        order.order_status = 'Order Pending'
-
-        # Assign a per-user sequential order number (1, 2, 3 … per user)
-        if not order.user_order_number:
-            last = (
-                Order.objects
-                .filter(user=order.user, complete=True, user_order_number__isnull=False)
-                .order_by('-user_order_number')
-                .first()
-            )
-            order.user_order_number = (last.user_order_number + 1) if last else 1
-
+        order.complete        = True
+        order.order_status    = 'Order Pending'
+        _assign_order_number(order)
         order.save()
 
-        # Track purchases for AI recommendations
-        session_id = request.session.session_key
         for item in order.orderitem_set.all():
             if item.Book_name:
                 track_purchase(request.user, item.Book_name, session_id)
 
-        # Save shipping address only if one hasn't been recorded yet
-        shipping_exists = ShippingAddress.objects.filter(order=order).exists()
-        if not shipping_exists:
-            shipping = data.get('shipping', {})
-            if shipping.get('address'):
-                ShippingAddress.objects.create(
-                    user=request.user.username,
-                    order=order,
-                    address=shipping.get('address', ''),
-                    city=shipping.get('city', 'Kathmandu'),
-                    ward_no=shipping.get('ward_no', 0),
-                    email=shipping.get('email') or shipping.get('zip_code', ''),
-                    phone=shipping.get('phone', 0),
-                )
+    # ── Shipping address ──────────────────────────────────────────────────────
+    if not ShippingAddress.objects.filter(order=order).exists():
+        if shipping.get('address'):
+            ShippingAddress.objects.create(
+                user=request.user.username,
+                order=order,
+                address=shipping.get('address', ''),
+                city=shipping.get('city', 'Kathmandu'),
+                ward_no=shipping.get('ward_no', 0),
+                email=email_input,
+                phone=shipping.get('phone', 0),
+            )
+
+    # ── Order confirmation email ──────────────────────────────────────────────
+    send_order_confirmation_email(order, 'Cash on Delivery', email_input)
+    _notify_admin_new_order(order, 'Cash on Delivery')
 
     return JsonResponse('Order processed', safe=False)
 
@@ -900,20 +1088,50 @@ def khalti_initiate_payment(request):
         data     = json.loads(request.body)
         shipping = data.get("shipping", {})
         total_rs = float(data.get("total", 0))
+        buy_now_product_id = data.get("buy_now_product_id")
     except (json.JSONDecodeError, ValueError):
         return JsonResponse({"error": "Invalid request body"}, status=400)
+
+    # Server-side email validation
+    email_input = (shipping.get("email") or "").strip()
+    if email_input:
+        try:
+            validate_email(email_input)
+        except ValidationError:
+            return JsonResponse({"error": "Please enter a valid email address."}, status=400)
 
     # Khalti requires amount in paisa (1 Rs = 100 paisa), minimum 10 Rs
     amount_paisa = int(total_rs * 100)
     if amount_paisa < 1000:
         return JsonResponse({"error": "Minimum order amount is Rs 10"}, status=400)
 
-    # Get the current incomplete order
-    order, _ = Order.objects.get_or_create(
-        user=request.user.username, complete=False
-    )
-    order.payment_method = "Khalti"
-    order.save(update_fields=["payment_method"])
+    if buy_now_product_id:
+        # ── Buy-Now path: isolate ONLY this product into its own order ────────
+        cart_order, _ = Order.objects.get_or_create(
+            user=request.user.username, complete=False
+        )
+        buy_now_item = cart_order.orderitem_set.filter(
+            Book_name_id=buy_now_product_id
+        ).first()
+        if not buy_now_item:
+            return JsonResponse({"error": "Item not found in cart."}, status=400)
+
+        # Create a fresh pending order for the single product only
+        order = Order.objects.create(
+            user=request.user.username,
+            complete=False,
+            order_status='Order Pending',
+            payment_method="Khalti",
+        )
+        buy_now_item.order = order
+        buy_now_item.save()
+    else:
+        # ── Normal cart path: use the entire cart order ───────────────────────
+        order, _ = Order.objects.get_or_create(
+            user=request.user.username, complete=False
+        )
+        order.payment_method = "Khalti"
+        order.save(update_fields=["payment_method"])
 
     # Persist shipping before redirecting — verification won't have form data
     if not ShippingAddress.objects.filter(order=order).exists():
@@ -1038,6 +1256,12 @@ def khalti_verify_payment(request):
     for item in order.orderitem_set.select_related("Book_name").all():
         if item.Book_name:
             track_purchase(request.user, item.Book_name, session_id)
+
+    # Send order confirmation email using shipping address email
+    shipping_addr = ShippingAddress.objects.filter(order=order).first()
+    recipient     = shipping_addr.email if shipping_addr else ''
+    send_order_confirmation_email(order, 'Khalti', recipient)
+    _notify_admin_new_order(order, 'Khalti')
 
     from django.urls import reverse
     success_url = (

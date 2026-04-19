@@ -19,10 +19,13 @@ from django.contrib import admin
 from django.urls import path
 from django.views.generic import TemplateView
 from django.conf.urls.static import static
+from bookstore.views import admin_logout_view
 
 
 urlpatterns = [
-  
+    # Override admin logout BEFORE admin.site.urls to fix Jazzmin + Django 4.1+
+    # CSRF mismatch: Jazzmin uses a GET link, Django requires POST for logout.
+    path('admin/logout/', admin_logout_view),
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     path('',include('books.urls')),

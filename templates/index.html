@@ -403,6 +403,136 @@ h1, h2, h3 {
         height: 220px;
     }
 }
+
+@media (max-width: 767px) {
+    .section-title {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .section-title h2 {
+        font-size: 22px;
+    }
+
+    .hero {
+        padding: 30px 0 20px;
+    }
+
+    .hero-card {
+        padding: 24px 18px;
+    }
+
+    .hero h1 {
+        font-size: 26px;
+        margin: 12px 0 10px;
+    }
+
+    .hero p {
+        font-size: 14px;
+    }
+
+    .hero-stack {
+        gap: 12px;
+    }
+
+    .hero-cover img {
+        height: 180px;
+    }
+
+    .hero-actions {
+        gap: 8px;
+    }
+
+    .panel {
+        padding: 20px 14px;
+        border-radius: 18px;
+    }
+
+    .gallery {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .gallery-card {
+        min-height: 150px;
+    }
+
+    .gallery-card h4 {
+        font-size: 16px;
+        bottom: 12px;
+        left: 12px;
+    }
+
+    .feature-card {
+        padding: 16px;
+    }
+
+    .btmgya-heading {
+        font-size: 1.3rem !important;
+    }
+
+    .btn-browse-more {
+        padding: 12px 32px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero h1 {
+        font-size: 22px;
+    }
+
+    .hero-stack {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .hero-cover {
+        transform: none !important;
+    }
+
+    .hero-cover img {
+        height: 200px;
+    }
+
+    .hero-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn-primary-custom,
+    .btn-outline-custom {
+        text-align: center;
+    }
+
+    .gallery {
+        grid-template-columns: 1fr;
+    }
+
+    .book-body h5 {
+        font-size: 14px;
+    }
+
+    .book-price {
+        font-size: 14px;
+    }
+
+    .book-actions a {
+        font-size: 13px;
+        padding: 7px 12px;
+    }
+
+    .btn-browse-more {
+        padding: 11px 24px;
+        font-size: 0.85rem;
+        display: block;
+        text-align: center;
+    }
+
+    .feature-grid .col-md-4 {
+        margin-bottom: 8px;
+    }
+}
 </style>
 
 <section class="hero">
@@ -938,7 +1068,7 @@ h1, h2, h3 {
             .replace(/'/g, '&#39;');
     }
 
-    var FETCH_TIMEOUT_MS = 12000;
+    var FETCH_TIMEOUT_MS = 40000;  // 40 s — Groq server timeout is 30 s; add buffer
 
     function fetchWithTimeout(url, ms) {
         var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
@@ -963,7 +1093,7 @@ h1, h2, h3 {
             grid.innerHTML =
                 '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--muted);">' +
                 '<p style="font-size:0.95rem;margin-bottom:0;">Couldn\'t load recommendations right now.</p>' +
-                '<a href="/" style="display:inline-block;margin-top:14px;padding:8px 22px;border:1.5px solid var(--accent);color:var(--accent);border-radius:10px;text-decoration:none;font-weight:600;">&#8635; Try Again</a>' +
+                '<button onclick="window.btmgyaRetry()" style="display:inline-block;margin-top:14px;padding:8px 22px;border:1.5px solid var(--accent);color:var(--accent);border-radius:10px;font-weight:600;background:transparent;cursor:pointer;">&#8635; Try Again</button>' +
                 '</div>';
         }
         setHeading('error');
@@ -972,103 +1102,155 @@ h1, h2, h3 {
     document.addEventListener('DOMContentLoaded', function () {
         var CACHE_KEY    = 'btmgya_recs';
         var REFRESH_FLAG = 'btmgya_needs_refresh';
+        var CACHE_TTL_MS = 4 * 60 * 60 * 1000;     // 4 h  — serve cached AI result
+        var IS_LOGGED_IN = {% if request.user.is_authenticated %}true{% else %}false{% endif %};
 
+        // ── Render a server response onto the page ────────────────────────────
+        function applyData(data, skipCache) {
+            var status = data.status || 'trending';
+            var books  = data.recommendations || [];
+
+            if (!books.length) {
+                if (grid) {
+                    grid.innerHTML =
+                        '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--muted);">' +
+                        '<p style="font-size:0.95rem;margin-bottom:0;">Add books to your cart or wishlist to get personalised picks.</p>' +
+                        '<a href="/store/" style="display:inline-block;margin-top:14px;padding:8px 22px;background:var(--accent);color:#fff;border-radius:10px;text-decoration:none;font-weight:600;">Browse Books</a>' +
+                        '</div>';
+                }
+                setHeading('trending');
+                return;
+            }
+
+            renderCards(books);
+            setHeading(status);
+
+            var s     = data.source_count || {};
+            var parts = [];
+            if (s.purchased) parts.push(s.purchased + ' purchase' + (s.purchased > 1 ? 's' : ''));
+            if (s.cart)      parts.push(s.cart + ' cart item'     + (s.cart > 1 ? 's' : ''));
+            if (s.wishlist)  parts.push(s.wishlist + ' wishlist item' + (s.wishlist > 1 ? 's' : ''));
+            if (subEl && parts.length) {
+                subEl.textContent = 'Based on your ' + parts.join(', ');
+            } else if (subEl && status !== 'ai_success') {
+                subEl.textContent = 'Trending picks popular with other readers';
+            }
+
+            // Cache AI results so plain navigation never re-hits Groq.
+            // cachedAt lets us expire stale caches after 4 hours even if
+            // the user hasn't added to cart / wishlist / purchased.
+            if (status === 'ai_success' && !skipCache) {
+                try {
+                    sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+                        recommendations: books,
+                        source_count: s,
+                        cachedAt: Date.now()
+                    }));
+                } catch(e) {}
+            }
+        }
+
+        // ── Stage 1: fast trending books (always shown first) ─────────────────
+        function fetchTrending() {
+            fetch('/recommendations/api/trending/', {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(res) { return res.ok ? res.json() : null; })
+            .then(function(data) {
+                if (data) applyData(data, true); // show trending, don't cache
+            })
+            .catch(function() {}); // silent — stage 2 will overwrite anyway
+        }
+
+        // ── Stage 2: AI recommendations (silently replaces trending when ready) ─
+        // forceRefresh=true appends ?refresh=1 to bypass the server-side cache
+        // (used after cart add / wishlist / purchase actions).
+        function fetchAI(forceRefresh) {
+            var url = '/recommendations/api/homepage/' + (forceRefresh ? '?refresh=1' : '');
+            fetch(url, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(res) { return res.ok ? res.json() : null; })
+            .then(function(data) {
+                if (data && data.status === 'ai_success') {
+                    applyData(data);   // client-side cache written inside applyData
+                }
+                // If Groq fails, trending results from stage 1 remain visible.
+                // Server-side cache means the next page load will retry cleanly.
+            })
+            .catch(function() {
+                // Network error — trending results stay visible, no retry blocker set.
+            });
+        }
+
+        // ── Full refresh (cart / wishlist / purchase action happened) ─────────
+        function fetchRecommendations() {
+            // Show skeleton while waiting
+            var skels = '';
+            for (var i = 0; i < 8; i++) {
+                skels += '<div class="btmgya-skeleton"><div class="btmgya-sk-img"></div><div class="btmgya-sk-body"><div class="btmgya-sk-line short"></div><div class="btmgya-sk-line long"></div><div class="btmgya-sk-line medium"></div><div class="btmgya-sk-line short"></div><div class="btmgya-sk-btn"></div></div></div>';
+            }
+            if (grid) grid.innerHTML = skels;
+            fetchTrending();                       // show trending immediately
+            if (IS_LOGGED_IN) fetchAI(true);   // bypass server cache — user action happened
+        }
+        window.btmgyaRetry = fetchRecommendations;
+
+        // ── Decide: serve cache, or do two-stage load ─────────────────────────
         var needsRefresh = false;
         try { needsRefresh = !!sessionStorage.getItem(REFRESH_FLAG); } catch(e) {}
 
-        if (!needsRefresh) {
-            // No action taken since last visit — show cached AI recs instantly
+        if (needsRefresh) {
+            // Cart add / wishlist / purchase — force a completely fresh AI fetch
+            try { sessionStorage.removeItem(REFRESH_FLAG); } catch(e) {}
+            try { sessionStorage.removeItem(CACHE_KEY);    } catch(e) {}
+            fetchRecommendations();
+        } else {
+            // Serve AI result from cache if available and fresh
+            var servedFromCache = false;
             try {
                 var cached = sessionStorage.getItem(CACHE_KEY);
                 if (cached) {
                     var cachedData = JSON.parse(cached);
-                    renderCards(cachedData.recommendations);
-                    setHeading('ai_success');
-                    var s = cachedData.source_count || {};
-                    var parts = [];
-                    if (s.purchased) parts.push(s.purchased + ' purchase' + (s.purchased > 1 ? 's' : ''));
-                    if (s.cart)      parts.push(s.cart + ' cart item' + (s.cart > 1 ? 's' : ''));
-                    if (s.wishlist)  parts.push(s.wishlist + ' wishlist item' + (s.wishlist > 1 ? 's' : ''));
-                    if (subEl && parts.length) {
-                        subEl.textContent = 'Based on your ' + parts.join(', ');
+                    var cacheAge   = cachedData.cachedAt ? (Date.now() - cachedData.cachedAt) : Infinity;
+                    if (cacheAge > CACHE_TTL_MS) {
+                        // Expired — discard, fall through to fresh load
+                        sessionStorage.removeItem(CACHE_KEY);
+                    } else {
+                        renderCards(cachedData.recommendations);
+                        setHeading('ai_success');
+                        var cs = cachedData.source_count || {};
+                        var cp = [];
+                        if (cs.purchased) cp.push(cs.purchased + ' purchase' + (cs.purchased > 1 ? 's' : ''));
+                        if (cs.cart)      cp.push(cs.cart + ' cart item'     + (cs.cart > 1 ? 's' : ''));
+                        if (cs.wishlist)  cp.push(cs.wishlist + ' wishlist item' + (cs.wishlist > 1 ? 's' : ''));
+                        if (subEl && cp.length) subEl.textContent = 'Based on your ' + cp.join(', ');
+                        servedFromCache = true;
                     }
-                    return;
                 }
             } catch(e) {}
+
+            if (!servedFromCache) {
+                fetchTrending();                        // always show something fast
+                if (IS_LOGGED_IN) fetchAI(false);   // server cache handles Groq throttling
+            }
         }
 
-        // User bought/carted/wishlisted something (or first load) — fetch fresh recs.
-        // Clear the flag before fetching so a failed request doesn't loop forever.
-        try { sessionStorage.removeItem(REFRESH_FLAG); } catch(e) {}
-
-        fetchWithTimeout('/recommendations/api/homepage/', FETCH_TIMEOUT_MS)
-            .then(function (res) {
-                if (!res.ok) { throw new Error('HTTP ' + res.status); }
-                return res.json();
-            })
-            .then(function (data) {
-                var status = data.status || 'trending';
-                var books  = data.recommendations || [];
-
-                if (!books.length) {
-                    // Server returned zero books — show a gentle prompt, keep section visible
-                    if (grid) {
-                        grid.innerHTML =
-                            '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--muted);">' +
-                            '<p style="font-size:0.95rem;margin-bottom:0;">Add books to your cart or wishlist to get personalised picks.</p>' +
-                            '<a href="/store/" style="display:inline-block;margin-top:14px;padding:8px 22px;background:var(--accent);color:#fff;border-radius:10px;text-decoration:none;font-weight:600;">Browse Books</a>' +
-                            '</div>';
-                    }
-                    setHeading('trending');
-                    return;
-                }
-
-                renderCards(books);
-                setHeading(status);
-
-                var s = data.source_count || {};
-                var parts = [];
-                if (s.purchased) parts.push(s.purchased + ' purchase' + (s.purchased > 1 ? 's' : ''));
-                if (s.cart)      parts.push(s.cart + ' cart item' + (s.cart > 1 ? 's' : ''));
-                if (s.wishlist)  parts.push(s.wishlist + ' wishlist item' + (s.wishlist > 1 ? 's' : ''));
-                if (subEl && parts.length) {
-                    subEl.textContent = 'Based on your ' + parts.join(', ');
-                } else if (subEl && status !== 'ai_success') {
-                    subEl.textContent = 'Trending picks popular with other readers';
-                }
-
-                // Cache only AI-quality results so future navigation skips the Groq call
-                if (status === 'ai_success') {
-                    try {
-                        sessionStorage.setItem(CACHE_KEY, JSON.stringify({
-                            recommendations: books,
-                            source_count: data.source_count || {}
-                        }));
-                    } catch(e) {}
-                }
-            })
-            .catch(function () {
-                // Timeout or network error — show stale cached recs if available,
-                // otherwise fall back to the error state.
-                try {
-                    var stale = sessionStorage.getItem(CACHE_KEY);
-                    if (stale) {
-                        var staleData = JSON.parse(stale);
-                        renderCards(staleData.recommendations);
-                        setHeading('ai_success');
-                        var s = staleData.source_count || {};
-                        var parts = [];
-                        if (s.purchased) parts.push(s.purchased + ' purchase' + (s.purchased > 1 ? 's' : ''));
-                        if (s.cart)      parts.push(s.cart + ' cart item' + (s.cart > 1 ? 's' : ''));
-                        if (s.wishlist)  parts.push(s.wishlist + ' wishlist item' + (s.wishlist > 1 ? 's' : ''));
-                        if (subEl && parts.length) {
-                            subEl.textContent = 'Based on your ' + parts.join(', ');
-                        }
-                        return;
-                    }
-                } catch(e) {}
-                showError();
+        // ── Wishlist add while already on the homepage ────────────────────────
+        // The global handler in base-top.html owns setting REFRESH_FLAG.
+        // Here we only clear the stale cache and refresh the grid immediately
+        // so the user sees updated picks without leaving the page.
+        if (typeof $ !== 'undefined') {
+            $(document).on('ajaxComplete.btmgya', function(e, xhr, settings) {
+                if ((settings.url || '').indexOf('add-to-wishlist') === -1) return;
+                try { sessionStorage.removeItem(CACHE_KEY); } catch(err) {}
+                fetchRecommendations();
             });
+        }
     });
 }());
 </script>

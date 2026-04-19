@@ -571,8 +571,11 @@ body {
 
                 <div class="product-price-panel">
                   <div>
-                    <div class="product-price-label">Special price</div>
-                    <div class="product-price">Rs. {{ data.price }}</div>
+                    <div class="product-price-label">Price</div>
+                    <div class="product-price">Rs. {{ data.discounted_price }}</div>
+                    <div style="font-size:.82rem;color:var(--bw-muted);text-decoration:line-through;margin-top:2px;">
+                      Rs. {{ data.price }}
+                    </div>
                   </div>
                   {% if data.quantity == 0 %}
                     <span class="product-stock stock-empty">
@@ -586,6 +589,27 @@ body {
                     </span>
                   {% endif %}
                 </div>
+
+                {% if other_sellers %}
+                <div style="background:#f8fafc;border:1px solid rgba(148,163,184,.18);border-radius:14px;padding:14px 16px;margin-bottom:14px;">
+                  <div style="font-size:.75rem;font-weight:700;color:var(--bw-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">
+                    <i class="fas fa-store"></i>&nbsp; Other sellers offering this book
+                  </div>
+                  {% for sp in other_sellers %}
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(148,163,184,.10);">
+                    <div>
+                      <div style="font-size:.88rem;font-weight:600;color:var(--bw-ink);">
+                        {% if sp.seller %}{{ sp.seller.username }}{% else %}BookLoop Store{% endif %}
+                      </div>
+                      <div style="font-size:.76rem;color:var(--bw-muted);">
+                        {{ sp.quantity }} in stock{% if sp.condition %}&nbsp;·&nbsp;{{ sp.condition }}{% endif %}
+                      </div>
+                    </div>
+                    <div style="font-size:1rem;font-weight:800;color:var(--bw-accent);">Rs. {{ sp.discounted_price }}</div>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% endif %}
 
                 <div id="cart-msg"></div>
 

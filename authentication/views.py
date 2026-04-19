@@ -226,6 +226,27 @@ def verifyUser(request):
 
                     data.delete()
                     request.session.pop('pre_reg_id', None)
+
+                    # Notify admin of new registration
+                    try:
+                        admin_email = settings.ADMIN_EMAIL
+                        if admin_email:
+                            send_mail(
+                                subject=f'[BookLoop] New user registered — {username}',
+                                message=(
+                                    f'A new user has joined BookLoop.\n\n'
+                                    f'Username : {username}\n'
+                                    f'Name     : {first_name} {last_name}\n'
+                                    f'Email    : {email}\n'
+                                    f'Role     : {role}\n'
+                                ),
+                                from_email=settings.EMAIL_HOST_USER,
+                                recipient_list=[admin_email],
+                                fail_silently=True,
+                            )
+                    except Exception:
+                        pass
+
                     messages.success(request, 'Account created successfully! Please log in.')
                     return HttpResponseRedirect('/login')   
                 else:
@@ -243,6 +264,7 @@ def verifyUser(request):
 
 
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
 from books.models import Product
 
 
@@ -346,6 +368,41 @@ def bookshop_add_book(request):
         'form': form,
         'bookshop': bookshop,
     })
+
+
+@login_required
+def bookshop_edit_book(request, book_id):
+    """Bookshop owner edits one of their existing book listings."""
+    product = get_object_or_404(Product, id=book_id, seller=request.user)
+
+    if request.method == 'POST':
+        form = BookshopProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'"{product.Book_name}" updated successfully.')
+            return redirect('bookshop_dashboard')
+        for field, errs in form.errors.items():
+            label = form.fields[field].label if field in form.fields else field
+            for err in errs:
+                messages.error(request, f'{label}: {err}')
+    else:
+        form = BookshopProductForm(instance=product)
+
+    return render(request, 'bookshop_edit_book.html', {
+        'form': form,
+        'product': product,
+    })
+
+
+@login_required
+def bookshop_delete_book(request, book_id):
+    """Remove a book listing (POST only). Seller can only delete their own books."""
+    if request.method == 'POST':
+        product = get_object_or_404(Product, id=book_id, seller=request.user)
+        name = product.Book_name
+        product.delete()
+        messages.success(request, f'"{name}" removed from your listings.')
+    return redirect('bookshop_dashboard')
 
 
 def changePassword(request):

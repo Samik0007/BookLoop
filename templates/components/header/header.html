@@ -68,6 +68,23 @@
   color: var(--bw-accent);
 }
 
+.bw-nav .nav-link.active-nav {
+  color: var(--bw-accent) !important;
+  font-weight: 700;
+  position: relative;
+}
+
+.bw-nav .nav-link.active-nav::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: var(--bw-accent);
+  border-radius: 2px;
+}
+
 .bw-search {
   min-width: 280px;
   max-width: 420px;
@@ -134,12 +151,31 @@
 @media (max-width: 991px) {
   .bw-search {
     width: 100%;
+    min-width: unset;
     margin: 12px 0;
   }
 
   .bw-actions {
     justify-content: flex-start;
     flex-wrap: wrap;
+    gap: 10px;
+    padding-bottom: 8px;
+  }
+
+  .bw-topbar .bw-offer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bw-topbar {
+    font-size: 12px;
+  }
+
+  .bw-brand {
+    font-size: 18px;
   }
 }
 </style>
@@ -159,15 +195,15 @@
     </button>
     <div class="collapse navbar-collapse" id="bwNavbar">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'store' %}">Store</a></li>
+        <li class="nav-item"><a class="nav-link{% if request.resolver_match.url_name == 'home' %} active-nav{% endif %}" href="{% url 'home' %}">Home</a></li>
+        <li class="nav-item"><a class="nav-link{% if request.resolver_match.url_name == 'store' %} active-nav{% endif %}" href="{% url 'store' %}">Store</a></li>
         <li class="nav-item">
-          <a class="nav-link fw-bold text-success" href="{% url 'browse_donations' %}">
+          <a class="nav-link fw-bold{% if request.resolver_match.url_name in 'browse_donations,add_donation' %} active-nav{% endif %}" href="{% url 'browse_donations' %}">
             <i class="fa fa-heart"></i>
             Donations
           </a>
         </li>
-        <li class="nav-item"><a class="nav-link" href="/about/">About</a></li>
+        <li class="nav-item"><a class="nav-link{% if request.resolver_match.url_name == 'about' %} active-nav{% endif %}" href="/about/">About</a></li>
       </ul>
 
       <form action="{% url 'search' %}" method="get" class="d-flex bw-search">

@@ -182,15 +182,13 @@ DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
 
 # -------------------------------------------------------------
-# Redis cache (via django-redis) for recommendation storage
+# File-based cache for AI recommendation results (no Redis needed)
+# Stores Groq responses per user for 4 hours — zero external deps.
 # -------------------------------------------------------------
 CACHES = {
     "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        },
+        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+        "LOCATION": str(BASE_DIR / ".ai_cache"),
     }
 }
 
@@ -221,8 +219,11 @@ EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 EMAIL_PORT = 587
 EMAIL_TIMEOUT = 10
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'samikisdope07@gmail.com')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'skzabhjkdyafplys')
+EMAIL_HOST_USER     = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL  = EMAIL_HOST_USER
+# Admin notification email — defaults to the sending account if not overridden
+ADMIN_EMAIL         = os.getenv('ADMIN_EMAIL', 'samikisdope07@gmail.com')
 
 
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')

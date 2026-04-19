@@ -169,7 +169,7 @@
           </a>
         </div>
         <div class="cart-title">{{ item.Book_name.Book_name }}</div>
-        <div class="cart-price">Rs. {{ item.Book_name.price|floatformat:2 }}</div>
+        <div class="cart-price">Rs. {{ item.Book_name.discounted_price|floatformat:2 }}</div>
         <div class="cart-qty">
           <div class="qty-controls">
             <button data-product="{{ item.Book_name.id }}" data-action="remove" class="qty-btn update-cart">-</button>
@@ -197,9 +197,12 @@
               <span>{% if item.Book_name in wishlist_products %}Saved{% else %}Wishlist{% endif %}</span>
             </button>
 
-            <form action="{% url 'remove_cart' item.Book_name.id %}" method="POST">
+            <form action="{% url 'remove_cart' item.Book_name.id %}" method="POST" class="remove-form">
               {% csrf_token %}
-              <input type="submit" value="Remove" class="btn btn-danger btn-sm w-100" />
+              <button type="button" class="btn btn-danger btn-sm w-100 remove-btn"
+                data-name="{{ item.Book_name.Book_name|escapejs }}">
+                Remove
+              </button>
             </form>
 
           </div>
@@ -212,7 +215,78 @@
   </div>
 </section>
 
+<!-- ── Remove-from-cart confirm dialog ─────────────────────────────────── -->
+<div id="remove-overlay" style="
+    display:none; position:fixed; inset:0; z-index:99999;
+    background:rgba(11,31,42,0.55); backdrop-filter:blur(3px);
+    align-items:center; justify-content:center;">
+  <div style="
+      background:#fff; border-radius:20px; padding:36px 32px;
+      max-width:400px; width:90%; box-shadow:0 20px 50px rgba(0,0,0,0.25);
+      text-align:center; transform:scale(0.9); opacity:0;
+      transition:transform 0.25s cubic-bezier(.34,1.56,.64,1), opacity 0.22s;"
+       id="remove-card">
+    <div style="font-size:2.4rem; margin-bottom:12px;">🗑️</div>
+    <h5 style="font-family:'Merriweather',serif; color:#0b1f2a; margin-bottom:8px;">Remove from Cart?</h5>
+    <p style="color:#52616b; font-size:0.9rem; margin-bottom:24px;">
+      <strong id="remove-book-name" style="color:#0b1f2a;"></strong> will be removed from your cart.
+    </p>
+    <div style="display:flex; gap:12px; justify-content:center;">
+      <button id="remove-cancel" style="
+          padding:10px 24px; border-radius:10px; border:1px solid #dde3e9;
+          background:#fff; font-weight:600; cursor:pointer; font-size:0.9rem;
+          color:#52616b; transition:background 0.18s;"
+        onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='#fff'">
+        Cancel
+      </button>
+      <button id="remove-confirm" style="
+          padding:10px 24px; border-radius:10px; border:none;
+          background:#dc3545; color:#fff; font-weight:700; cursor:pointer; font-size:0.9rem;
+          transition:background 0.18s;"
+        onmouseover="this.style.background='#bb2d3b'" onmouseout="this.style.background='#dc3545'">
+        Yes, Remove
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
+  // ── Remove-from-cart dialog ────────────────────────────────────────────────
+  var pendingRemoveForm = null;
+
+  document.querySelectorAll('.remove-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      pendingRemoveForm = this.closest('.remove-form');
+      document.getElementById('remove-book-name').textContent = '"' + this.dataset.name + '"';
+      var overlay = document.getElementById('remove-overlay');
+      var card    = document.getElementById('remove-card');
+      overlay.style.display = 'flex';
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          card.style.transform = 'scale(1)';
+          card.style.opacity   = '1';
+        });
+      });
+    });
+  });
+
+  function closeRemoveDialog() {
+    var overlay = document.getElementById('remove-overlay');
+    var card    = document.getElementById('remove-card');
+    card.style.transform = 'scale(0.9)';
+    card.style.opacity   = '0';
+    setTimeout(function() { overlay.style.display = 'none'; }, 220);
+    pendingRemoveForm = null;
+  }
+
+  document.getElementById('remove-cancel').addEventListener('click', closeRemoveDialog);
+  document.getElementById('remove-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeRemoveDialog();
+  });
+  document.getElementById('remove-confirm').addEventListener('click', function() {
+    if (pendingRemoveForm) pendingRemoveForm.submit();
+  });
+
   var updateBtns = document.getElementsByClassName('update-cart')
 
   for (var i = 0; i < updateBtns.length; i++) {

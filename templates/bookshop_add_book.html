@@ -1,82 +1,173 @@
+{% load static %}
 {% include "components/base/base-top.html" %}
 {% include "components/header/header.html" %}
 
-<main class="container py-5" style="min-height:70vh;">
-  <div class="row justify-content-center">
-    <div class="col-lg-7 col-md-9">
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+<style>
+:root { --ink:#0b1f2a; --muted:#52616b; --accent:#1f8a70; --accent-2:#f28f3b; }
+body { font-family:'Work Sans',sans-serif; color:var(--ink); background:#f4f6f8; }
+h1,h2,h3,h4,h5,h6 { font-family:'Merriweather',serif; }
+.bsform-card { background:#fff; border-radius:16px; box-shadow:0 4px 24px rgba(11,31,42,.09); overflow:hidden; }
+.bsform-header { background:var(--ink); color:#fff; padding:22px 28px; }
+.bsform-body { padding:28px; }
+.bsform-label { font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:5px; }
+.form-control, select.form-control {
+  border-radius:9px !important; border:1.5px solid #e2e8f0 !important;
+  font-size:.9rem; padding:9px 12px;
+}
+.form-control:focus {
+  border-color:var(--accent) !important;
+  box-shadow:0 0 0 3px rgba(31,138,112,.12) !important;
+  outline:none;
+}
+.bsform-submit {
+  background:var(--accent); color:#fff; border:none; border-radius:11px;
+  font-weight:700; font-size:1rem; width:100%; padding:13px;
+  cursor:pointer; transition:background .2s;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.bsform-submit:hover { background:#176b56; }
+.bsform-back { color:var(--muted); text-decoration:none; font-size:.87rem; display:inline-flex; align-items:center; gap:5px; }
+.bsform-back:hover { color:var(--ink); }
+.bsform-info { background:#e6f3ef; border:1px solid #b2ddd4; border-radius:9px; padding:11px 15px; font-size:.85rem; color:#0f5132; }
+.bsform-divider { height:1px; background:#f0f4f8; margin:18px 0; }
+/* Image upload zone */
+.bsform-upload-zone {
+  border:2px dashed #d1d9e0; border-radius:11px; padding:28px 20px;
+  text-align:center; cursor:pointer; transition:border-color .2s, background .2s;
+}
+.bsform-upload-zone:hover { border-color:var(--accent); background:#f0faf6; }
+.bsform-upload-zone input[type=file] { display:none; }
+#coverPreview { max-height:160px; border-radius:10px; object-fit:contain; display:none; margin:0 auto; }
+</style>
+
+<main class="container py-5" style="min-height:72vh;">
+  <div class="row justify-content-center">
+    <div class="col-lg-7 col-md-10">
+
+      <!-- Back nav -->
       <div class="mb-4">
-        <a href="{% url 'bookshop_dashboard' %}" class="text-muted small">
-          <i class="fa fa-arrow-left me-1"></i>Back to Dashboard
+        <a href="{% url 'bookshop_dashboard' %}" class="bsform-back">
+          <i class="fa fa-arrow-left"></i> Back to Dashboard
         </a>
       </div>
 
-      <div class="card shadow-sm border-0">
-        <div class="card-header" style="background:var(--ink);color:#fff;">
-          <h5 class="mb-0"><i class="fa fa-plus-circle me-2"></i>Submit a New Book</h5>
-          <small class="text-white-50">Your book will be reviewed by admin before going live.</small>
+      <div class="bsform-card">
+        <!-- Header -->
+        <div class="bsform-header">
+          <div class="d-flex align-items-center gap-3">
+            <div style="width:46px;height:46px;background:rgba(255,255,255,.12);border-radius:12px;
+                        display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">
+              📖
+            </div>
+            <div>
+              <h5 style="margin:0;font-size:1.1rem;font-weight:700;">Add a New Book</h5>
+              <div style="font-size:.8rem;opacity:.65;margin-top:2px;">
+                {% if bookshop.is_verified %}
+                  Your book will go <strong style="color:#86efac;">live immediately</strong> after submitting.
+                {% else %}
+                  Your book will be reviewed by an admin before going live.
+                {% endif %}
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="card-body p-4">
+
+        <!-- Body -->
+        <div class="bsform-body">
 
           {% if messages %}
             {% for msg in messages %}
-              <div class="alert alert-{{ msg.tags|default:'danger' }} py-2">{{ msg }}</div>
+              <div class="alert alert-{{ msg.tags|default:'danger' }} alert-dismissible fade show mb-4" style="border-radius:9px;font-size:.88rem;">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
             {% endfor %}
           {% endif %}
 
           <form method="post" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
 
+            <!-- Book Title -->
             <div class="mb-3">
-              <label class="form-label fw-semibold">Book Title <span class="text-danger">*</span></label>
+              <div class="bsform-label">Book Title <span style="color:#e53e3e;">*</span></div>
               {{ form.Book_name }}
             </div>
 
+            <!-- Author -->
             <div class="mb-3">
-              <label class="form-label fw-semibold">Author <span class="text-danger">*</span></label>
+              <div class="bsform-label">Author <span style="color:#e53e3e;">*</span></div>
               {{ form.Author }}
             </div>
 
+            <!-- Genre -->
             <div class="mb-3">
-              <label class="form-label fw-semibold">Genre / Subject <span class="text-danger">*</span></label>
+              <div class="bsform-label">Genre / Subject <span style="color:#e53e3e;">*</span></div>
               {{ form.genre }}
-              <div class="form-text">e.g. Fiction, Academic — Computing, Self-Help</div>
+              <div style="font-size:.77rem;color:var(--muted);margin-top:4px;">
+                e.g. Fiction, Academic, Self-Help, Nepali, Science
+              </div>
             </div>
 
+            <!-- Description -->
             <div class="mb-3">
-              <label class="form-label fw-semibold">Description</label>
+              <div class="bsform-label">Description</div>
               {{ form.description }}
             </div>
 
+            <div class="bsform-divider"></div>
+
+            <!-- Price + Quantity -->
             <div class="row g-3 mb-3">
               <div class="col-6">
-                <label class="form-label fw-semibold">Price (Rs) <span class="text-danger">*</span></label>
+                <div class="bsform-label">Price (Rs.) <span style="color:#e53e3e;">*</span></div>
                 {{ form.price }}
               </div>
               <div class="col-6">
-                <label class="form-label fw-semibold">Quantity <span class="text-danger">*</span></label>
+                <div class="bsform-label">Quantity <span style="color:#e53e3e;">*</span></div>
                 {{ form.quantity }}
               </div>
             </div>
 
+            <!-- Condition -->
             <div class="mb-3">
-              <label class="form-label fw-semibold">Condition</label>
+              <div class="bsform-label">Condition</div>
               {{ form.condition }}
             </div>
 
+            <div class="bsform-divider"></div>
+
+            <!-- Cover Image -->
             <div class="mb-4">
-              <label class="form-label fw-semibold">Cover Image</label>
-              {{ form.image }}
+              <div class="bsform-label">Cover Image</div>
+              <label class="bsform-upload-zone d-block" for="id_image">
+                <img id="coverPreview" src="" alt="Preview">
+                <div id="uploadHint">
+                  <div style="font-size:2rem;margin-bottom:8px;">🖼️</div>
+                  <div style="font-weight:600;color:var(--ink);font-size:.9rem;">Click to upload cover image</div>
+                  <div style="font-size:.78rem;color:var(--muted);margin-top:3px;">JPG, PNG, WEBP — recommended 300×450 px</div>
+                </div>
+                {{ form.image }}
+              </label>
             </div>
 
-            <div class="alert alert-info py-2 small">
+            <!-- Info box -->
+            <div class="bsform-info mb-4">
               <i class="fa fa-info-circle me-1"></i>
-              After submission your book will show as <strong>Pending</strong> until an admin approves it.
+              {% if bookshop.is_verified %}
+                Your book will appear in the store <strong>immediately</strong> after you submit it.
+              {% else %}
+                After submitting, your book will show as <strong>Pending</strong> on your dashboard
+                until an admin approves it. Verified shops skip this step.
+              {% endif %}
             </div>
 
-            <button type="submit" class="btn w-100 py-2" style="background:var(--accent);color:#fff;font-size:1rem;">
-              <i class="fa fa-paper-plane me-1"></i>Submit for Review
+            <button type="submit" class="bsform-submit">
+              <i class="fa fa-paper-plane"></i>
+              {% if bookshop.is_verified %}Publish Book{% else %}Submit for Review{% endif %}
             </button>
+
           </form>
         </div>
       </div>
@@ -84,6 +175,22 @@
     </div>
   </div>
 </main>
+
+<script>
+document.getElementById('id_image').addEventListener('change', function () {
+  var file = this.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    var preview = document.getElementById('coverPreview');
+    var hint    = document.getElementById('uploadHint');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    hint.style.display    = 'none';
+  };
+  reader.readAsDataURL(file);
+});
+</script>
 
 {% include "components/footer/footer.html" %}
 {% include "components/base/base-bottom.html" %}

@@ -1,165 +1,331 @@
+{% load static %}
 {% include "components/base/base-top.html" %}
 {% include "components/header/header.html" %}
 
-<main class="container py-5" style="min-height:70vh;">
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  {# ── Verification status banner ── #}
-  {% if bookshop.is_verified %}
-  <div class="alert border-0 mb-4 d-flex align-items-center gap-2 py-2 px-3"
-       style="background:#d1fae5;color:#065f46;border-radius:8px;">
-    <i class="fa fa-check-circle fa-lg"></i>
-    <span><strong>Verified shop</strong> — your books go <strong>live in the store immediately</strong> after you submit them.</span>
-  </div>
-  {% else %}
-  <div class="alert border-0 mb-4 d-flex align-items-center gap-2 py-2 px-3"
-       style="background:#fef3c7;color:#92400e;border-radius:8px;">
-    <i class="fa fa-exclamation-triangle fa-lg"></i>
-    <span><strong>Shop not yet verified.</strong>  Submitted books wait for admin approval before going live.
-      Ask a site admin to verify your shop for instant publishing.</span>
-  </div>
-  {% endif %}
+<style>
+:root {
+  --ink: #0b1f2a; --muted: #52616b; --accent: #1f8a70;
+  --accent-2: #f28f3b; --paper: #f7f3eb;
+}
+body { font-family: 'Work Sans', sans-serif; color: var(--ink); background: #f4f6f8; }
+h1,h2,h3,h4,h5,h6 { font-family: 'Merriweather', serif; }
+.bsdash-hero {
+  background: linear-gradient(135deg, #0b1f2a 0%, #1a3347 100%);
+  color: #fff; padding: 36px 0 0; position: relative; overflow: hidden;
+}
+.bsdash-hero::before {
+  content:''; position:absolute; right:-60px; top:-60px;
+  width:280px; height:280px; border-radius:50%;
+  background: radial-gradient(circle, rgba(31,138,112,.25), transparent);
+}
+.bsdash-stat-chip {
+  background: rgba(255,255,255,.07);
+  border-radius: 12px 12px 0 0;
+  padding: 18px 16px; text-align: center;
+  position: relative; overflow: hidden;
+}
+.bsdash-stat-chip::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+}
+.bsdash-stat-chip.pend::before { background:#fbbf24; }
+.bsdash-stat-chip.live::before { background:#22c55e; }
+.bsdash-stat-chip.rej::before  { background:#f87171; }
+.bsdash-badge-live    { background:#d1fae5; color:#065f46; }
+.bsdash-badge-pending { background:#fef3c7; color:#92400e; }
+.bsdash-badge-reject  { background:#fee2e2; color:#991b1b; }
+.bsdash-badge-other   { background:#f1f5f9; color:#64748b; }
+.bsdash-book-card {
+  background:#fff; border-radius:14px;
+  box-shadow: 0 2px 14px rgba(11,31,42,.07);
+  overflow:hidden; transition: box-shadow .2s, transform .2s;
+}
+.bsdash-book-card:hover { box-shadow:0 6px 24px rgba(11,31,42,.13); transform:translateY(-1px); }
+.bsdash-cover {
+  width:72px; flex-shrink:0; background:#f0eee9;
+  display:flex; align-items:center; justify-content:center;
+}
+.bsdash-cover img { width:72px; height:100px; object-fit:cover; display:block; }
+.bsdash-sidebar-card {
+  background:#fff; border-radius:14px;
+  box-shadow: 0 2px 14px rgba(11,31,42,.07); overflow:hidden;
+}
+.bsdash-label {
+  font-size:.72rem; font-weight:600; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--muted); margin-bottom:4px;
+}
+.bsdash-action-btn {
+  font-size:.78rem; font-weight:500; border-radius:7px;
+  padding:4px 11px; border:none; cursor:pointer; text-decoration:none;
+  display:inline-flex; align-items:center; gap:4px; transition:opacity .15s;
+}
+.bsdash-action-btn:hover { opacity:.82; }
+.bsdash-btn-edit   { background:#eef2f7; color:#0b1f2a; }
+.bsdash-btn-del    { background:#fee2e2; color:#dc2626; }
+.bsdash-empty {
+  text-align:center; padding:64px 20px; background:#fff;
+  border-radius:14px; box-shadow:0 2px 16px rgba(11,31,42,.06);
+}
+.bsdash-add-btn {
+  background:#f28f3b; color:#fff; border-radius:12px; font-weight:600;
+  padding:10px 22px; text-decoration:none; display:inline-flex;
+  align-items:center; gap:6px; font-size:.9rem; transition: background .2s;
+}
+.bsdash-add-btn:hover { background:#d97a2e; color:#fff; }
+.bsdash-save-btn {
+  background:#1f8a70; color:#fff; border:none; border-radius:9px;
+  font-weight:600; font-size:.85rem; width:100%; padding:9px;
+  cursor:pointer; transition: background .2s;
+}
+.bsdash-save-btn:hover { background:#176b56; }
+.form-control, .form-control-sm {
+  border-radius:8px !important; border-color:#e2e8f0 !important; font-size:.88rem;
+}
+.form-control:focus { border-color:#1f8a70 !important; box-shadow:0 0 0 3px rgba(31,138,112,.12) !important; }
+.genre-pill {
+  display:inline-block; background:#e6f3ef; color:#1f8a70;
+  font-size:.68rem; font-weight:600; padding:2px 9px;
+  border-radius:20px; text-transform:uppercase; letter-spacing:.04em; margin-top:4px;
+}
+</style>
 
+<!-- ══ HERO BANNER ════════════════════════════════════════════════════════════ -->
+<section class="bsdash-hero">
+  <div class="container">
+    <div class="d-flex align-items-start gap-3 flex-wrap">
+
+      <!-- Shop icon -->
+      <div style="width:72px;height:72px;background:rgba(255,255,255,.1);border-radius:16px;
+                  display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0;">
+        🏪
+      </div>
+
+      <!-- Shop meta -->
+      <div style="flex:1;min-width:220px;">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <h1 style="font-size:1.7rem;margin:0;font-weight:700;color:#fff;">{{ bookshop.shop_name }}</h1>
+          {% if bookshop.is_verified %}
+            <span style="background:#22c55e;color:#fff;padding:3px 11px;border-radius:20px;font-size:.72rem;font-weight:700;">✓ Verified</span>
+          {% else %}
+            <span style="background:rgba(255,255,255,.12);color:#fbbf24;padding:3px 11px;border-radius:20px;font-size:.72rem;font-weight:700;">⏳ Pending Verification</span>
+          {% endif %}
+        </div>
+        <div style="margin-top:7px;opacity:.7;font-size:.88rem;">
+          {% if bookshop.location %}<span>📍 {{ bookshop.location }}</span>{% endif %}
+          {% if bookshop.phone %}<span class="ms-3">📞 {{ bookshop.phone }}</span>{% endif %}
+        </div>
+        {% if bookshop.description %}
+          <p style="margin-top:6px;opacity:.75;font-size:.88rem;max-width:560px;line-height:1.5;">{{ bookshop.description }}</p>
+        {% endif %}
+      </div>
+
+      <!-- CTA (desktop) -->
+      <a href="{% url 'bookshop_add_book' %}" class="bsdash-add-btn d-none d-md-inline-flex" style="margin-top:6px;">
+        <i class="fa fa-plus"></i> Add New Book
+      </a>
+    </div>
+
+    <!-- Stats row -->
+    <div class="row g-3 mt-4">
+      <div class="col-4">
+        <div class="bsdash-stat-chip pend">
+          <div style="font-size:1.9rem;font-weight:700;color:#fbbf24;line-height:1;">{{ pending_count }}</div>
+          <div style="font-size:.75rem;opacity:.65;text-transform:uppercase;letter-spacing:.05em;margin-top:3px;">Pending</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="bsdash-stat-chip live">
+          <div style="font-size:1.9rem;font-weight:700;color:#22c55e;line-height:1;">{{ approved_count }}</div>
+          <div style="font-size:.75rem;opacity:.65;text-transform:uppercase;letter-spacing:.05em;margin-top:3px;">Live</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="bsdash-stat-chip rej">
+          <div style="font-size:1.9rem;font-weight:700;color:#f87171;line-height:1;">{{ rejected_count }}</div>
+          <div style="font-size:.75rem;opacity:.65;text-transform:uppercase;letter-spacing:.05em;margin-top:3px;">Rejected</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ MAIN CONTENT ═══════════════════════════════════════════════════════════ -->
+<main class="container py-4" style="min-height:60vh;">
+
+  <!-- Messages -->
   {% if messages %}
     {% for msg in messages %}
-      <div class="alert alert-{{ msg.tags|default:'info' }} py-2">{{ msg }}</div>
+      <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show mb-3" style="border-radius:10px;font-size:.9rem;">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
     {% endfor %}
+  {% endif %}
+
+  <!-- Verification banner -->
+  {% if not bookshop.is_verified %}
+  <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;
+              padding:12px 16px;margin-bottom:20px;font-size:.88rem;color:#92400e;">
+    <i class="fa fa-info-circle me-1"></i>
+    <strong>Shop not verified.</strong> Books you add will wait for admin approval.
+    Contact a site admin to verify your shop for instant publishing.
+  </div>
   {% endif %}
 
   <div class="row g-4">
 
-    <!-- Sidebar: Shop Info -->
-    <div class="col-lg-4">
-      <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header" style="background:var(--accent);color:#fff;">
-          <h5 class="mb-0"><i class="fa fa-store me-2"></i>{{ bookshop.shop_name }}</h5>
-          {% if bookshop.is_verified %}
-            <small><i class="fa fa-check-circle"></i> Verified</small>
-          {% else %}
-            <small style="opacity:.85;"><i class="fa fa-clock-o"></i> Pending verification</small>
-          {% endif %}
-        </div>
-        <div class="card-body">
-          <p><i class="fa fa-map-marker me-1 text-muted"></i> {{ bookshop.location|default:"—" }}</p>
-          <p><i class="fa fa-phone me-1 text-muted"></i> {{ bookshop.phone|default:"—" }}</p>
-          <p class="text-muted small">{{ bookshop.description|default:"No description yet." }}</p>
-        </div>
+    <!-- ── LEFT SIDEBAR ────────────────────────────────────────────────── -->
+    <div class="col-lg-3">
+
+      <!-- Mobile: Add book button -->
+      <div class="d-md-none mb-3">
+        <a href="{% url 'bookshop_add_book' %}" class="bsdash-add-btn w-100 justify-content-center">
+          <i class="fa fa-plus"></i> Add New Book
+        </a>
       </div>
 
-      <!-- Stats -->
-      <div class="row g-2 mb-4">
-        {% if pending_count %}
-        <div class="col-4 text-center">
-          <div class="card border-0 shadow-sm py-3" style="border-left:4px solid #f59e0b!important;">
-            <div class="fw-bold fs-4" style="color:#d97706;">{{ pending_count }}</div>
-            <div class="text-muted small">Pending</div>
-          </div>
+      <!-- Edit shop card -->
+      <div class="bsdash-sidebar-card">
+        <div style="background:#0b1f2a;color:#fff;padding:14px 18px;border-radius:14px 14px 0 0;">
+          <h6 style="margin:0;font-size:.88rem;font-weight:600;font-family:'Work Sans',sans-serif;">
+            <i class="fa fa-store me-2" style="opacity:.7;"></i>Shop Details
+          </h6>
         </div>
-        {% endif %}
-        <div class="col-4 text-center">
-          <div class="card border-0 shadow-sm py-3" style="border-left:4px solid #28a745!important;">
-            <div class="fw-bold fs-4 text-success">{{ approved_count }}</div>
-            <div class="text-muted small">Live</div>
-          </div>
-        </div>
-        <div class="col-4 text-center">
-          <div class="card border-0 shadow-sm py-3" style="border-left:4px solid #dc3545!important;">
-            <div class="fw-bold fs-4 text-danger">{{ rejected_count }}</div>
-            <div class="text-muted small">Rejected</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Edit shop form -->
-      <div class="card shadow-sm border-0">
-        <div class="card-header" style="background:var(--ink);color:#fff;">
-          <h6 class="mb-0"><i class="fa fa-pencil me-1"></i>Edit Shop Details</h6>
-        </div>
-        <div class="card-body">
+        <div style="padding:18px;">
           <form method="post">
             {% csrf_token %}
             <input type="hidden" name="action" value="update_shop">
-            <div class="mb-2">
-              <label class="form-label small fw-semibold">Shop Name</label>
-              <input type="text" name="shop_name" class="form-control form-control-sm" value="{{ bookshop.shop_name }}">
-            </div>
-            <div class="mb-2">
-              <label class="form-label small fw-semibold">Location</label>
-              <input type="text" name="location" class="form-control form-control-sm" value="{{ bookshop.location }}">
-            </div>
-            <div class="mb-2">
-              <label class="form-label small fw-semibold">Phone</label>
-              <input type="text" name="phone" class="form-control form-control-sm" value="{{ bookshop.phone }}">
+
+            <div class="mb-3">
+              <div class="bsdash-label">Shop Name</div>
+              <input type="text" name="shop_name" class="form-control form-control-sm"
+                     value="{{ bookshop.shop_name }}" placeholder="Your shop name">
             </div>
             <div class="mb-3">
-              <label class="form-label small fw-semibold">Description</label>
-              <textarea name="description" class="form-control form-control-sm" rows="3">{{ bookshop.description }}</textarea>
+              <div class="bsdash-label">Location</div>
+              <input type="text" name="location" class="form-control form-control-sm"
+                     value="{{ bookshop.location }}" placeholder="e.g. Thamel, Kathmandu">
             </div>
-            <button type="submit" class="btn btn-sm w-100" style="background:var(--accent);color:#fff;">Save Changes</button>
+            <div class="mb-3">
+              <div class="bsdash-label">Phone</div>
+              <input type="text" name="phone" class="form-control form-control-sm"
+                     value="{{ bookshop.phone }}" placeholder="98XXXXXXXX">
+            </div>
+            <div class="mb-3">
+              <div class="bsdash-label">Description</div>
+              <textarea name="description" class="form-control form-control-sm" rows="3"
+                        placeholder="Tell customers about your shop…">{{ bookshop.description }}</textarea>
+            </div>
+
+            <button type="submit" class="bsdash-save-btn">
+              <i class="fa fa-save me-1"></i> Save Changes
+            </button>
           </form>
         </div>
       </div>
+
     </div><!-- /sidebar -->
 
-    <!-- Main: Book listings -->
-    <div class="col-lg-8">
+    <!-- ── MAIN: BOOK LISTINGS ────────────────────────────────────────── -->
+    <div class="col-lg-9">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 style="color:var(--ink);">My Book Listings</h4>
-        <a href="{% url 'bookshop_add_book' %}" class="btn btn-sm" style="background:var(--accent-2);color:#fff;">
-          <i class="fa fa-plus me-1"></i>Add New Book
+        <h5 style="margin:0;font-weight:700;color:var(--ink);">My Book Listings</h5>
+        <a href="{% url 'bookshop_add_book' %}" class="bsdash-add-btn d-none d-md-inline-flex" style="font-size:.82rem;padding:8px 16px;">
+          <i class="fa fa-plus"></i> Add New Book
         </a>
       </div>
 
       {% if my_books %}
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-            <thead style="background:var(--ink);color:#fff;">
-              <tr>
-                <th>Book</th>
-                <th>Author</th>
-                <th>Price</th>
-                <th>Qty</th>
-                <th>Status</th>
-                <th>Submitted</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for book in my_books %}
-              <tr>
-                <td>
-                  {% if book.image %}
-                    <img src="{{ book.image.url }}" alt="{{ book.Book_name }}" style="width:40px;height:50px;object-fit:cover;border-radius:4px;" class="me-2">
-                  {% endif %}
-                  <strong>{{ book.Book_name }}</strong>
-                </td>
-                <td>{{ book.Author }}</td>
-                <td>Rs {{ book.price }}</td>
-                <td>{{ book.quantity }}</td>
-                <td>
-                  {% if book.listing_status == 'approved' %}
-                    <span class="badge bg-success"><i class="fa fa-circle" style="font-size:.6em;"></i> Live</span>
-                  {% elif book.listing_status == 'pending' %}
-                    <span class="badge bg-warning text-dark"><i class="fa fa-clock-o"></i> Pending</span>
-                  {% elif book.listing_status == 'rejected' %}
-                    <span class="badge bg-danger"><i class="fa fa-times"></i> Rejected</span>
-                  {% else %}
-                    <span class="badge bg-secondary">{{ book.listing_status }}</span>
-                  {% endif %}
-                </td>
-                <td class="text-muted small">{{ book.pub_date|date:"d M Y" }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        <div class="d-flex flex-column gap-3">
+          {% for book in my_books %}
+          <div class="bsdash-book-card">
+            <div class="d-flex align-items-stretch">
+
+              <!-- Cover -->
+              <div class="bsdash-cover">
+                {% if book.image %}
+                  <img src="{{ book.image.url }}" alt="{{ book.Book_name }}">
+                {% else %}
+                  <span style="font-size:1.6rem;">📚</span>
+                {% endif %}
+              </div>
+
+              <!-- Info -->
+              <div style="flex:1;padding:14px 16px;">
+                <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+
+                  <div>
+                    <div style="font-weight:700;font-size:.97rem;color:var(--ink);line-height:1.3;">
+                      {{ book.Book_name }}
+                    </div>
+                    <div style="font-size:.82rem;color:var(--muted);margin-top:2px;">
+                      by {{ book.Author }}
+                    </div>
+                    {% if book.genre %}
+                      <span class="genre-pill">{{ book.genre }}</span>
+                    {% endif %}
+                  </div>
+
+                  <div style="text-align:right;flex-shrink:0;">
+                    <!-- Status badge -->
+                    {% if book.listing_status == 'approved' %}
+                      <span class="bsdash-badge-live" style="font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:8px;display:inline-block;">✓ Live</span>
+                    {% elif book.listing_status == 'pending' %}
+                      <span class="bsdash-badge-pending" style="font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:8px;display:inline-block;">⏳ Pending</span>
+                    {% elif book.listing_status == 'rejected' %}
+                      <span class="bsdash-badge-reject" style="font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:8px;display:inline-block;">✗ Rejected</span>
+                    {% else %}
+                      <span class="bsdash-badge-other" style="font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:8px;display:inline-block;">{{ book.listing_status }}</span>
+                    {% endif %}
+                    <!-- Price -->
+                    <div style="font-size:1.05rem;font-weight:700;color:var(--accent);margin-top:5px;">
+                      Rs. {{ book.price }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bottom row: meta + actions -->
+                <div class="d-flex align-items-center justify-content-between mt-2 flex-wrap gap-2">
+                  <div style="font-size:.78rem;color:var(--muted);">
+                    Qty: <strong>{{ book.quantity }}</strong>
+                    {% if book.condition %} &nbsp;·&nbsp; {{ book.condition }}{% endif %}
+                    &nbsp;·&nbsp; {{ book.pub_date|date:"d M Y" }}
+                  </div>
+                  <div class="d-flex gap-2">
+                    <a href="{% url 'bookshop_edit_book' book.id %}" class="bsdash-action-btn bsdash-btn-edit">
+                      <i class="fa fa-pencil"></i> Edit
+                    </a>
+                    <form method="post" action="{% url 'bookshop_delete_book' book.id %}" style="margin:0;"
+                          onsubmit="return confirm('Remove \'{{ book.Book_name|escapejs }}\' from your listings?')">
+                      {% csrf_token %}
+                      <button type="submit" class="bsdash-action-btn bsdash-btn-del">
+                        <i class="fa fa-trash"></i> Remove
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+          {% endfor %}
         </div>
+
       {% else %}
-        <div class="text-center py-5 text-muted">
-          <i class="fa fa-book fa-3x mb-3 d-block"></i>
-          <p>You haven't submitted any books yet.</p>
-          <a href="{% url 'bookshop_add_book' %}" class="btn" style="background:var(--accent);color:#fff;">Add Your First Book</a>
+        <div class="bsdash-empty">
+          <div style="font-size:3rem;margin-bottom:16px;">📚</div>
+          <h5 style="font-weight:700;color:var(--ink);margin-bottom:8px;">No books listed yet</h5>
+          <p style="color:var(--muted);font-size:.92rem;max-width:360px;margin:0 auto 22px;">
+            Add your first book to start selling on BookLoop. It will go live after admin review.
+          </p>
+          <a href="{% url 'bookshop_add_book' %}" class="bsdash-add-btn">
+            <i class="fa fa-plus"></i> Add Your First Book
+          </a>
         </div>
       {% endif %}
-    </div>
 
+    </div><!-- /main -->
   </div>
 </main>
 

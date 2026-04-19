@@ -248,6 +248,15 @@ class DonateBookForm(forms.ModelForm):
             "image": "Book Image",
             "description": "Description",
         }
+        widgets = {
+            "description": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 7,
+                    "placeholder": "Add details about the book — edition, condition notes, missing pages, etc.",
+                }
+            ),
+        }
 
 
 class ShippingAddressForm(forms.ModelForm):

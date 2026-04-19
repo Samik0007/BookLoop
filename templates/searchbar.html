@@ -94,6 +94,19 @@
   border: 1px solid #e6e1d7;
   background: #fff;
   color: var(--bw-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+
+.search-actions .icon-btn:hover {
+  background: #f0faf6;
+  border-color: var(--bw-accent);
+  color: var(--bw-accent);
 }
 </style>
 
@@ -134,10 +147,9 @@
               <button data-product="{{book.id}}" data-action="add" class="icon-btn update-cart">
                 <i class="fas fa-cart-plus"></i>
               </button>
-              <span class="product_data addToWishlist icon-btn">
+              <button type="button" class="icon-btn addToWishlist product_data" data-id="{{book.id}}" title="Add to Wishlist">
                 <i class="fas fa-heart"></i>
-                <input type="hidden" value="{{book.id}}" class="prod_id">
-              </span>
+              </button>
             </div>
           </div>
         </div>
@@ -194,7 +206,7 @@
   $('.addToWishlist').click(function (e) {
     e.preventDefault()
 
-    var product_id = $(this).closest('.product_data').find('.prod_id').val()
+    var product_id = $(this).data('id')
     var token = csrftoken
 
     $.ajax({
