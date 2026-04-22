@@ -137,10 +137,18 @@
   border-radius: 999px;
 }
 
+.bw-dropdown {
+  position: relative;
+}
+.bw-dropdown .bw-icon-btn.dropdown-toggle::after {
+  display: none;
+}
 .bw-dropdown .dropdown-menu {
   border-radius: 14px;
   border: 1px solid #efe8da;
   padding: 10px;
+  right: 0;
+  left: auto;
 }
 
 .bw-dropdown .dropdown-item {
@@ -231,9 +239,10 @@
             <span>Swap Matches</span>
           </a>
           <div class="dropdown bw-dropdown">
-            <a class="bw-icon-btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <a class="bw-icon-btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-reference="parent" data-bs-offset="[0,4]">
               <i class="fa fa-user-circle"></i>
               <span>{{ request.user.username }}</span>
+              <i class="fa fa-chevron-down" style="font-size:11px; margin-left:2px;"></i>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="fa fa-user"></i> Profile</a></li>
