@@ -28,6 +28,18 @@ from .user_interaction import (
 from .forms import DonateBookForm, SwapBookForm
 
 
+def _get_or_create_active_order(username: str) -> "Order":
+    """Return the latest incomplete order for *username*, creating one if needed.
+
+    Replaces all get_or_create(user=..., complete=False) calls which raise
+    MultipleObjectsReturned when a user ends up with more than one open order.
+    """
+    order = Order.objects.filter(user=username, complete=False).last()
+    if order is None:
+        order = Order.objects.create(user=username, complete=False)
+    return order
+
+
 def _approved_swap_books_queryset():
     """Return approved swap listings with seller preloaded.
 
@@ -105,10 +117,7 @@ class DiscountOffersView(ListView):
 
         cart_items = 0
         if self.request.user.is_authenticated:
-            order, _ = Order.objects.get_or_create(
-                user=self.request.user.username,
-                complete=False,
-            )
+            order = _get_or_create_active_order(self.request.user.username)
             cart_items = order.get_cart_items
 
         context["cartItems"] = cart_items
@@ -275,9 +284,7 @@ def index_page(request):
     )
     
     if request.user.is_authenticated:
-        order, _ = Order.objects.get_or_create(
-            user=request.user.username, complete=False
-        )
+        order = _get_or_create_active_order(request.user.username)
         cartItems = order.get_cart_items
         
         # Get AI recommendations
@@ -311,9 +318,7 @@ def about(request):
 def profile(request):
     from authentication.models import UserProfile
 
-    order, _ = Order.objects.get_or_create(
-        user=request.user.username, complete=False
-    )
+    order = _get_or_create_active_order(request.user.username)
     items         = order.orderitem_set.all()
     cartItems     = order.get_cart_items
     placed_orders = Order.objects.filter(
@@ -371,9 +376,7 @@ def store(request):
     cartItems = 0
 
     if request.user.is_authenticated:
-        order, _ = Order.objects.get_or_create(
-            user=request.user.username, complete=False
-        )
+        order = _get_or_create_active_order(request.user.username)
         cartItems = order.get_cart_items
 
     # Recently viewed: pull the user's latest view events, deduplicate by product,
@@ -410,9 +413,7 @@ def nepali_books_page(request):
     """Dedicated page showing all Nepali genre books sorted by popularity."""
     cartItems = 0
     if request.user.is_authenticated:
-        order, _ = Order.objects.get_or_create(
-            user=request.user.username, complete=False
-        )
+        order = _get_or_create_active_order(request.user.username)
         cartItems = order.get_cart_items
 
     sort = request.GET.get("sort", "popular")
@@ -474,9 +475,7 @@ def prod_detail(request, id):
     user_rating = None
 
     if request.user.is_authenticated:
-        order, _ = Order.objects.get_or_create(
-            user=request.user.username, complete=False
-        )
+        order = _get_or_create_active_order(request.user.username)
         cartItems = order.get_cart_items
 
         existing = Rating.objects.filter(user=request.user, book=product).values_list(
@@ -554,9 +553,7 @@ def cart(request):
     cartItems = 0
 
     if request.user.is_authenticated:
-        order, _ = Order.objects.get_or_create(
-            user=request.user.username, complete=False
-        )
+        order = _get_or_create_active_order(request.user.username)
         items = order.orderitem_set.all()
         cartItems = order.get_cart_items
 
@@ -584,9 +581,7 @@ def checkout(request):
     buy_now_total = None
 
     if request.user.is_authenticated:
-        order, _ = Order.objects.get_or_create(
-            user=request.user.username, complete=False
-        )
+        order = _get_or_create_active_order(request.user.username)
         cartItems = order.get_cart_items
 
         if buy_now_product_id:
@@ -619,9 +614,7 @@ def updateItem(request):
     action = data['action']
 
     original_product = get_object_or_404(Product, id=productId)
-    order, _ = Order.objects.get_or_create(
-        user=request.user.username, complete=False
-    )
+    order = _get_or_create_active_order(request.user.username)
     session_id = request.session.session_key
 
     if action == 'add':
@@ -694,9 +687,7 @@ def wishlist(request):
     order = None
 
     if request.user.is_authenticated:
-        order, _ = Order.objects.get_or_create(
-            user=request.user.username, complete=False
-        )
+        order = _get_or_create_active_order(request.user.username)
         items = order.orderitem_set.all()
         cartItems = order.get_cart_items
         wishlist_items = Wishlist.objects.filter(user=request.user)
@@ -755,9 +746,7 @@ def search(request):
     search_mode = 'keyword'
 
     if request.user.is_authenticated:
-        order, _ = Order.objects.get_or_create(
-            user=request.user.username, complete=False
-        )
+        order = _get_or_create_active_order(request.user.username)
         cartItems = order.get_cart_items
 
     if query:
@@ -997,9 +986,7 @@ def ProcessOrder(request):
 
     if buy_now_product_id:
         # ── Buy-Now path: isolate ONLY this product into its own order ────────
-        cart_order, _ = Order.objects.get_or_create(
-            user=request.user.username, complete=False
-        )
+        cart_order = _get_or_create_active_order(request.user.username)
         buy_now_item = cart_order.orderitem_set.filter(
             Book_name_id=buy_now_product_id
         ).first()
@@ -1026,9 +1013,7 @@ def ProcessOrder(request):
 
     else:
         # ── Normal cart checkout: complete the entire cart order ──────────────
-        order, _ = Order.objects.get_or_create(
-            user=request.user.username, complete=False
-        )
+        order = _get_or_create_active_order(request.user.username)
         order.transaction_id = transaction_id
         order.complete        = True
         order.order_status    = 'Order Pending'
@@ -1107,9 +1092,7 @@ def khalti_initiate_payment(request):
 
     if buy_now_product_id:
         # ── Buy-Now path: isolate ONLY this product into its own order ────────
-        cart_order, _ = Order.objects.get_or_create(
-            user=request.user.username, complete=False
-        )
+        cart_order = _get_or_create_active_order(request.user.username)
         buy_now_item = cart_order.orderitem_set.filter(
             Book_name_id=buy_now_product_id
         ).first()
@@ -1127,9 +1110,7 @@ def khalti_initiate_payment(request):
         buy_now_item.save()
     else:
         # ── Normal cart path: use the entire cart order ───────────────────────
-        order, _ = Order.objects.get_or_create(
-            user=request.user.username, complete=False
-        )
+        order = _get_or_create_active_order(request.user.username)
         order.payment_method = "Khalti"
         order.save(update_fields=["payment_method"])
 

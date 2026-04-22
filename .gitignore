@@ -24,3 +24,7 @@ media/
 .vscode/
 .ai_cache/
 __pycache__/
+
+
+
+repomix-output.txt
